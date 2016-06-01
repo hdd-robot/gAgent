@@ -1,0 +1,9 @@
+#*
+~*
+*.o
+.project
+.directory
+.cproject
+.settings
+Debug/
+Release/
