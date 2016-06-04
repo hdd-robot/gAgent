@@ -8,8 +8,6 @@
 #include "udp_client_server.hpp"
 
 #define BUFLEN 1024  			//Max length of buffer
-#define PORT_MONITOR  8888   		//PORT
-#define ADR_MONITOR  "127.0.0.1"	//ADR MONITOR
 
 int main(int ac, char* av[]) {
 	libconfig::Config cfg;
@@ -17,6 +15,7 @@ int main(int ac, char* av[]) {
 
 	try {
 		cfg.readFile("config.cfg");
+
 	} catch (const libconfig::FileIOException &fioex) {
 		std::cerr << "I/O error while reading file configuration." << std::endl;
 		return (EXIT_FAILURE);
@@ -25,6 +24,15 @@ int main(int ac, char* av[]) {
 				<< " - " << pex.getError() << std::endl;
 		return (EXIT_FAILURE);
 	}
+
+	try{
+		string name = cfg.lookup("name");
+		cout << "Store name: " << name << endl << endl;
+	}
+	catch(const libconfig::SettingNotFoundException &nfex){
+		cerr << "No 'name' setting in configuration file." << endl;
+	}
+
 
 	int ret = Args::getAppName(ac, av);
 	switch (ret) {
@@ -44,17 +52,19 @@ int main(int ac, char* av[]) {
 	case Args::AGENT_MONITOR:
 		char msg[BUFLEN];
 		int num = 0;
-		udp_client_server::udp_server server("127.0.0.1", PORT_MONITOR);
-		while (1) {
-			num++;
-			server.recv(msg, BUFLEN);
-			fprintf(stdout, "%8.6d : %s \n", num, msg);
+		if (Args::argsUsageAgentMonitor(ac, av, args) == 0) {
+			udp_client_server::udp_server server(args->getIpAdrMon(), args->getPortMon());
+			while (1) {
+				num++;
+				server.recv(msg, BUFLEN);
+				fprintf(stdout, "%8.6d : %s \n", num, msg);
 
+			}
 		}
 		break;
 
 
-	}
+}
 
 	return 0;
 
