@@ -26,11 +26,20 @@ int main(int ac, char* av[]) {
 	}
 
 	try{
-		string name = cfg.lookup("name");
-		cout << "Store name: " << name << endl << endl;
+		args->setIpAdrPlt(cfg.lookup("plt_address"));
+		args->setPortPlt (cfg.lookup("plt_port"));
+		args->setIpAdrMng(cfg.lookup("mng_address"));
+		args->setPortMng (cfg.lookup("mng_port"));
+		args->setIpAdrMon(cfg.lookup("mon_address"));
+		args->setPortMon (cfg.lookup("mon_port"));
 	}
 	catch(const libconfig::SettingNotFoundException &nfex){
-		cerr << "No 'name' setting in configuration file." << endl;
+		cerr << "No setting in configuration file. The defaults values are set" << endl;
+	}
+	catch (...)
+	{
+	    std::cerr << "Unknown exception caught\n";
+	    cerr << "the defaults values are set" << endl;
 	}
 
 
@@ -53,7 +62,7 @@ int main(int ac, char* av[]) {
 		char msg[BUFLEN];
 		int num = 0;
 		if (Args::argsUsageAgentMonitor(ac, av, args) == 0) {
-			udp_client_server::udp_server server(args->getIpAdrMon(), args->getPortMon());
+			udp_client_server::udp_server server(args->getIpAdrMon(), boost::lexical_cast<int>(args->getPortMon()));
 			while (1) {
 				num++;
 				server.recv(msg, BUFLEN);

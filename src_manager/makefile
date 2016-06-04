@@ -19,9 +19,9 @@ clean :
 
 $(EXEC_NAME) : $(OBJ_FILES)
 	$(CC) -o $(EXEC_NAME) $(OBJ_FILES)  $(LIBS)
-	ln -s gAgent agentmanager
-	ln -s gAgent agentplatform
-	ln -s gAgent agentmonitor
+	ln -sf gAgent agentmanager
+	ln -sf gAgent agentplatform
+	ln -sf gAgent agentmonitor
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) $(INCLUDES) -std=c++11 -o $@ -c $<
