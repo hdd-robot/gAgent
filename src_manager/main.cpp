@@ -16,11 +16,11 @@ int main(int ac, char* av[]) {
 	Args* args = new Args;
 
 	try {
-		cfg.readFile("example.cfg");
-	} catch (const FileIOException &fioex) {
+		cfg.readFile("config.cfg");
+	} catch (const libconfig::FileIOException &fioex) {
 		std::cerr << "I/O error while reading file configuration." << std::endl;
 		return (EXIT_FAILURE);
-	} catch (const ParseException &pex) {
+	} catch (const libconfig::ParseException &pex) {
 		std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine()
 				<< " - " << pex.getError() << std::endl;
 		return (EXIT_FAILURE);
