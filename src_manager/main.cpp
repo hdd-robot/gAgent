@@ -7,6 +7,7 @@
 #include "AgentManager.hpp"
 #include "udp_client_server.hpp"
 
+
 #define BUFLEN 1024  			//Max length of buffer
 
 int main(int ac, char* av[]) {
@@ -26,12 +27,17 @@ int main(int ac, char* av[]) {
 	}
 
 	try{
+
 		args->setIpAdrPlt(cfg.lookup("plt_address"));
 		args->setPortPlt (cfg.lookup("plt_port"));
 		args->setIpAdrMng(cfg.lookup("mng_address"));
 		args->setPortMng (cfg.lookup("mng_port"));
 		args->setIpAdrMon(cfg.lookup("mon_address"));
 		args->setPortMon (cfg.lookup("mon_port"));
+
+		string name = cfg.lookup("name");
+		cout << "Store name: " << name << endl;
+
 	}
 	catch(const libconfig::SettingNotFoundException &nfex){
 		cerr << "No setting in configuration file. The defaults values are set" << endl;

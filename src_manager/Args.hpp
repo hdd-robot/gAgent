@@ -19,9 +19,9 @@ public:
 	Args();
 
 	static int getAppName(int, char**);
-	static int argsUsageAgentManager(int, char**, Args*);
+	static int argsUsageAgentManager (int, char**, Args*);
 	static int argsUsageAgentPlatform(int, char**, Args*);
-	static int argsUsageAgentMonitor(int, char**, Args*);
+	static int argsUsageAgentMonitor (int, char**, Args*);
 
 	const string& getIpAdrMng() const {
 		return ipAdrMng;
