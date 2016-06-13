@@ -12,10 +12,7 @@ void AgentPlatform::startAgentPlatform(Args* args) {
 	while (1) {
 		server.recv(msg, BUFLENAF);
 		fprintf(stdout, " %s \n", msg);
-
-
 	}
-
 
 }
 
