@@ -7,6 +7,7 @@
 #include "AgentManager.hpp"
 #include "udp_client_server.hpp"
 
+
 #define BUFLEN 1024  			//Max length of buffer
 
 int main(int ac, char* av[]) {
@@ -26,7 +27,7 @@ int main(int ac, char* av[]) {
 
 	try{
 		string name = cfg.lookup("name");
-		cout << "Store name: " << name << endl << endl;
+		cout << "Store name: " << name << endl;
 	}
 	catch(const libconfig::SettingNotFoundException &nfex){
 		cerr << "No 'name' setting in configuration file." << endl;
