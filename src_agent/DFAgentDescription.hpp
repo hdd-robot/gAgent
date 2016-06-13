@@ -18,16 +18,22 @@ namespace gagent {
 class DFAgentDescription {
 public:
 	DFAgentDescription();
+	void setName(std::string);
 	void setAgentID(AgentID*);
 	void setDFType(const std::string);
 
-	void addDFServices(AgentService*);
+	static void registerService(const Agent*, const DFAgentDescription*);
+
+	void addDFServices(DFService*);
 
 	virtual ~DFAgentDescription();
 private:
 	std::stack<AgentService*> DFservicesList;
 	std::string DFType;
+	std::string name;
 	AgentID* agentID;
+
+
 
 };
 

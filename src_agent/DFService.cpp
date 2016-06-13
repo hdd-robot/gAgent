@@ -14,10 +14,9 @@ DFService::DFService() {
 
 }
 
-void DFService::registerService(const Agent* ag, const DFAgentDescription* sds) {
-	// Todo : serialisation ...
+void DFService::setName(std::string nameService){
+	name = nameService;
 }
-
 DFService::~DFService() {
 
 }

@@ -5,6 +5,10 @@
 #include "../src_agent/Agent.hpp"
 #include "../src_agent/AgentCore.hpp"
 
+#include "../src_agent/DFAgentDescription.hpp"
+#include "../src_agent/DFService.hpp"
+
+
 using namespace gagent;
 
 class myCycle: public CyclicBehaviour {
@@ -26,8 +30,19 @@ public:
 	virtual ~myAgent() {}
 
 	void setup() {
-		myCycle* bb = new myCycle(this);
-		addBehaviour(bb);
+
+		DFAgentDescription dfd ;
+		DFService sd1, sd2;
+
+		dfd.setName(this->getAgentId().getAgentID());
+		sd1.setName("service1");
+		sd2.setName("service2");
+
+		dfd.addDFServices(&sd1);
+		dfd.addDFServices(&sd2);
+
+		//myCycle* bb = new myCycle(this);
+		//addBehaviour(bb);
 	}
 
 };

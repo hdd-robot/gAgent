@@ -15,10 +15,18 @@ namespace gagent {
 class DFService {
 public:
 	DFService();
-	static void registerService(const Agent*, const DFAgentDescription*);
-
-
 	virtual ~DFService();
+
+	void setServiceName(std::string);
+	void setServiceType();
+	void setOntologies(const std::string);
+	void setLanguages(const std::string);
+	void addProperties(const std::string, const std::string);
+
+private:
+	std::string name;
+
+
 };
 
 } /* namespace gagent */

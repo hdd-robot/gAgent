@@ -20,11 +20,6 @@ public:
 private:
   static std::map<string,std::list<Service>> serviceList;
 
-
-
-
-
-
 };
 
 #endif /*AGENTPLATFORM */

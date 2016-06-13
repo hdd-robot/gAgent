@@ -19,3 +19,19 @@ void AgentPlatform::startAgentPlatform(Args* args) {
 void AgentPlatform::stopAgentPlaform() {
 
 }
+
+void AgentPlatform::insertAgent(string name) {
+
+}
+
+void AgentPlatform::removeAgent(string name) {
+
+}
+
+void AgentPlatform::insertService(string agentName) {
+
+}
+
+void AgentPlatform::removeService() {
+
+}
