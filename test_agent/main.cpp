@@ -35,11 +35,13 @@ public:
 		DFService sd1, sd2;
 
 		dfd.setName(this->getAgentId().getAgentID());
-		sd1.setName("service1");
-		sd2.setName("service2");
+		sd1.setServiceName("service1");
+		sd2.setServiceName("service2");
 
 		dfd.addDFServices(&sd1);
 		dfd.addDFServices(&sd2);
+
+		dfd.registerService(this,&dfd);
 
 		//myCycle* bb = new myCycle(this);
 		//addBehaviour(bb);

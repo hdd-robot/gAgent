@@ -3,7 +3,7 @@ CFLAGS = -Wall -D_REENTRANT
 LIB_NAME = libgagentlib.so 
 INCLUDES = 
 LIBS =    -pthread -lboost_system
-OBJ_FILES = Behaviour.o Agent.o AgentCore.o udp_client_server.o DFAgentDescription.o AgentService.o AgentID.o ACLMessage.o
+OBJ_FILES = Behaviour.o Agent.o AgentCore.o udp_client_server.o AgentID.o ACLMessage.o DFService.o DFAgentDescription.o 
 
 all : $(LIB_NAME)
 	

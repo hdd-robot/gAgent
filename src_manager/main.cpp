@@ -7,6 +7,9 @@
 #include "AgentManager.hpp"
 #include "udp_client_server.hpp"
 
+#include "../src_agent/DFAgentDescription.hpp"
+#include "../src_agent/DFService.hpp"
+
 
 #define BUFLEN 1024  			//Max length of buffer
 

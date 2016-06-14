@@ -4,45 +4,43 @@
  *  Created on: 14 août 2014
  *      Author: cyberjunky
  */
-/* namespace gagent */
 
 #include "DFAgentDescription.hpp"
 
-namespace gagent {
+namespace gagent
+{
 
-DFAgentDescription::DFAgentDescription() {
+  DFAgentDescription::DFAgentDescription ()
+  {
 
-}
+  }
 
-DFAgentDescription::~DFAgentDescription() {
+  DFAgentDescription::~DFAgentDescription ()
+  {
 
+  }
 
-}
+  void DFAgentDescription::setAgentID (AgentID* aid){
+    this->agentID = aid;
+  }
 
-void DFAgentDescription::setAgentID(AgentID* aid) {
-	agentID = aid;
-}
+  void DFAgentDescription::setDFType (const std::string dftype){
+    this->DFType = dftype;
 
-void DFAgentDescription::setDFType(const std::string dftype) {
-	DFType = dftype ;
+  }
 
-}
+  void DFAgentDescription::addDFServices (DFService* srv){
+    this->DFservicesList.push (srv);
+  }
 
-void DFAgentDescription::addDFServices(DFService* srv) {
-	DFservicesList.push(srv);
-}
+  void DFAgentDescription::setName (std::string nameAgentDescription){
+    this->name = nameAgentDescription;
+  }
 
+  void DFAgentDescription::registerService (const Agent* ag, const DFAgentDescription* sds){
+    // Todo : serialisation ...
+    std::cout << "register" << std::endl;
+  }
 
-
-void DFAgentDescription::setName(std::string nameAgentDescription){
-	name = nameAgentDescription;
-}
-
-void DFAgentDescription::registerService(const Agent* ag, const DFAgentDescription* sds) {
-	// Todo : serialisation ...
-}
-
-
-
-
+}/* namespace gagent */
 

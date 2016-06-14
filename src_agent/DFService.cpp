@@ -7,18 +7,42 @@
 
 #include "DFService.hpp"
 
-namespace gagent {
+namespace gagent
+{
 
-DFService::DFService() {
+  DFService::DFService ()
+  {
+
+  }
+  DFService::~DFService () {
+
+  }
+
+  void DFService::setServiceName (std::string nameService){
+  //  this->name = nameService;
+  }
 
 
-}
 
-void DFService::setName(std::string nameService){
-	name = nameService;
-}
-DFService::~DFService() {
+  void
+  DFService::setServiceType ()
+  {
+  }
 
-}
+  void
+  DFService::setOntologies (const std::string allocator)
+  {
+  }
+
+  void
+  DFService::setLanguages (const std::string allocator)
+  {
+  }
+
+  void
+  DFService::addProperties (const std::string allocator,
+			    const std::string allocator1)
+  {
+  }
 
 } /* namespace gagent */

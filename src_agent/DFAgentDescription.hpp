@@ -7,8 +7,10 @@
 
 #include <stack>
 #include <string>
-#include "AgentService.hpp"
+
+#include "DFService.hpp"
 #include "AgentID.hpp"
+#include "Agent.hpp"
 
 #ifndef DFAGENTDESCRIPTION_HPP_
 #define DFAGENTDESCRIPTION_HPP_
@@ -28,7 +30,7 @@ public:
 
 	virtual ~DFAgentDescription();
 private:
-	std::stack<AgentService*> DFservicesList;
+	std::stack<DFService*> DFservicesList;
 	std::string DFType;
 	std::string name;
 	AgentID* agentID;
