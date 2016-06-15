@@ -16,7 +16,7 @@ clean :
 
 
 $(EXEC_NAME) : $(OBJ_FILES)
-	$(CC) -o $(EXEC_NAME)  $(OBJ_FILES)  -I../src_agent  -L../src_agent $(LIBS) 
+	$(CC) -o $(EXEC_NAME)  $(OBJ_FILES) -I../src_agent  -L../src_agent $(LIBS) 
 
 
 %.o: %.cpp

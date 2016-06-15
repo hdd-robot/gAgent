@@ -2,9 +2,9 @@ CC = g++
 CFLAGS = -Wall
 EXEC_NAME = gAgent
 INCLUDES =
-LIBS = -lboost_program_options -lboost_system -lboost_filesystem -lconfig++
+LIBS = -lgagentlib -lboost_program_options -lboost_system -lboost_filesystem -lconfig++ 
 
-OBJ_FILES = main.o Args.o AgentPlatform.o AgentManager.o udp_client_server.o
+OBJ_FILES = main.o Args.o AgentPlatform.o AgentManager.o 
 
 all : $(EXEC_NAME)
 
@@ -18,10 +18,10 @@ clean :
 	rm -f ./agentmonitor
 
 $(EXEC_NAME) : $(OBJ_FILES)
-	$(CC) -o $(EXEC_NAME) $(OBJ_FILES)  $(LIBS)
-	ln -s gAgent agentmanager
-	ln -s gAgent agentplatform
-	ln -s gAgent agentmonitor
+	$(CC) -o $(EXEC_NAME) $(OBJ_FILES)  -I../src_agent  -L../src_agent $(LIBS)
+	ln -sf gAgent agentmanager
+	ln -sf gAgent agentplatform
+	ln -sf gAgent agentmonitor
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) $(INCLUDES) -std=c++11 -o $@ -c $<

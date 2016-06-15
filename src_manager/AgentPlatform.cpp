@@ -1,5 +1,5 @@
 #include "AgentPlatform.hpp"
-
+namespace gagent {
 /* constructor */
 AgentPlatform::AgentPlatform() {
 
@@ -34,4 +34,5 @@ void AgentPlatform::insertService(string agentName) {
 
 void AgentPlatform::removeService() {
 
+}
 }

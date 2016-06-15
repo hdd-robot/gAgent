@@ -1,15 +1,16 @@
 #include "Args.hpp"
+namespace gagent {
 
 Args::Args() {
 
 	this->ipAdrPlt = "127.0.0.1";
-	this->portPlt = "40011";
+	this->portPlt  = 40011;
 
 	this->ipAdrMng = "127.0.0.1";
-	this->portMng = "40012";
+	this->portMng  = 40012;
 
 	this->ipAdrMon = "127.0.0.1";
-	this->portMon = "40013";
+	this->portMon  = 40013;
 
 }
 
@@ -55,11 +56,11 @@ int Args::argsUsageAgentManager(int ac, char** av, Args* args) {
 	}
 
 	if (vm.count("port")) {
-		args->setPortMng(vm["port"].as<string>());
+		args->setPortMng(vm["port"].as<int>());
 	}
 
 	if (vm.count("ip")) {
-		args->setPortMng(vm["ip"].as<string>());
+		args->setIpAdrMng(vm["ip"].as<string>());
 	}
 
 	return 0;
@@ -89,11 +90,11 @@ int Args::argsUsageAgentPlatform(int ac, char** av, Args* args) {
 	}
 
 	if (vm.count("port")) {
-		args->setPortPlt(vm["port"].as<string>());
+		args->setPortPlt(vm["port"].as<int>());
 	}
 
 	if (vm.count("ip")) {
-		args->setPortPlt(vm["ip"].as<string>());
+		args->setIpAdrPlt(vm["ip"].as<string>());
 	}
 
 	return 0;
@@ -124,13 +125,14 @@ int Args::argsUsageAgentMonitor(int ac, char** av, Args* args) {
 	}
 
 	if (vm.count("port")) {
-		args->setPortMon(vm["port"].as<string>());
+		args->setPortMon(vm["port"].as<int>());
 	}
 
 	if (vm.count("ip")) {
-		args->setPortMon(vm["ip"].as<string>());
+		args->setIpAdrMon(vm["ip"].as<string>());
 	}
 
 	return 0;
 }
 
+}

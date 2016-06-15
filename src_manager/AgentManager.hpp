@@ -2,7 +2,7 @@
 
 #ifndef AGENTMANAGER_H_
 #define AGENTMANAGER_H_
-
+namespace gagent {
 class AgentManager {
 public:
 	AgentManager();
@@ -13,4 +13,5 @@ private:
 
 };
 
+}
 #endif /*AGENTMANAGER */

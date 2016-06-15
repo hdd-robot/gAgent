@@ -13,6 +13,7 @@
 #ifndef ARGS_H_
 #define ARGS_H_
 using namespace std;
+namespace gagent {
 class Args {
 public:
 
@@ -47,27 +48,27 @@ public:
 		this->ipAdrPlt = ipAdrPlt;
 	}
 
-	const string& getPortMng() const {
+	int getPortMng() const {
 		return portMng;
 	}
 
-	void setPortMng(const string& portMng) {
+	void setPortMng(int portMng) {
 		this->portMng = portMng;
 	}
 
-	const string& getPortMon() const {
+	int getPortMon() const {
 		return portMon;
 	}
 
-	void setPortMon(const string& portMon) {
+	void setPortMon(int portMon) {
 		this->portMon = portMon;
 	}
 
-	const string& getPortPlt() const {
+	int getPortPlt() const {
 		return portPlt;
 	}
 
-	void setPortPlt(const string& portPlt) {
+	void setPortPlt(int portPlt) {
 		this->portPlt = portPlt;
 	}
 
@@ -77,13 +78,14 @@ public:
 
 private:
 	string ipAdrMon;
-	string portMon;
+	int portMon;
 
 	string ipAdrPlt;
-	string portPlt;
+	int portPlt;
 
 	string ipAdrMng;
-	string portMng;
+	int portMng;
 
 };
+}
 #endif /* ARGS_H_ */
