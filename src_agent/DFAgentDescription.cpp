@@ -30,7 +30,7 @@ namespace gagent
   }
 
   void DFAgentDescription::addDFServices (DFService* srv){
-    this->DFservicesList.push (srv);
+    this->DFservicesList.push_back(srv);
   }
 
   void DFAgentDescription::setName (std::string nameAgentDescription){

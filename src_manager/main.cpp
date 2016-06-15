@@ -95,7 +95,6 @@ int main(int ac, char* av[]) {
 				num++;
 				server.recv(msg, BUFLEN);
 				fprintf(stdout, "%8.6d : %s \n", num, msg);
-
 			}
 		}
 		break;

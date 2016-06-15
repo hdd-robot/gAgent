@@ -30,7 +30,7 @@ public:
 
 	virtual ~DFAgentDescription();
 private:
-	std::stack<DFService*> DFservicesList;
+	std::list<DFService*> DFservicesList;
 	std::string DFType;
 	std::string name;
 	AgentID* agentID;

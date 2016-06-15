@@ -18,31 +18,6 @@ namespace gagent
 
   }
 
-  void DFService::setServiceName (std::string nameService){
-  //  this->name = nameService;
-  }
 
-
-
-  void
-  DFService::setServiceType ()
-  {
-  }
-
-  void
-  DFService::setOntologies (const std::string allocator)
-  {
-  }
-
-  void
-  DFService::setLanguages (const std::string allocator)
-  {
-  }
-
-  void
-  DFService::addProperties (const std::string allocator,
-			    const std::string allocator1)
-  {
-  }
 
 } /* namespace gagent */
