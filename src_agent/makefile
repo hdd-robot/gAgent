@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -D_REENTRANT
+CFLAGS = -Wall  -D_REENTRANT 
 LIB_NAME = libgagentlib.so 
 INCLUDES = 
 LIBS =    -pthread -lboost_system

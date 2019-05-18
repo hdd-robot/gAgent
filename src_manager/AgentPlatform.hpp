@@ -1,5 +1,8 @@
 
 #include "Args.hpp"
+#include <boost/asio/io_service.hpp>
+
+
 
 #ifndef AGENTPLATFORM_H_
 #define AGENTPLATFORM_H_
@@ -18,7 +21,7 @@ public:
 
 
 private:
-  static std::map<string,std::list<Service>> serviceList;
+  //static std::map<string,std::list<Service>> serviceList;
 
 
 

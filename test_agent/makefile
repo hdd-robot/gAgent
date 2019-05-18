@@ -2,7 +2,7 @@ CC = g++ -std=c++11
 CFLAGS = -Wall  
 EXEC_NAME = testAgent
 INCLUDES =
-LIBS = -lgagentlib  -pthread -lboost_system
+LIBS = -lgagent  -pthread -lboost_system  -lconfig++ -lrt -lQt5Widgets -lQt5Gui -lQt5Core -lGL
 OBJ_FILES = main.o
 INSTALL_DIR = /usr/bin
 

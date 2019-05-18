@@ -1,0 +1,12 @@
+
+
+
+## Compilation
+
+cd build
+cmake ..
+make 
+
+
+
+## 

@@ -1,0 +1,112 @@
+\documentclass[a4paper]{article}
+
+\usepackage[french]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{url}
+\usepackage{array}
+\usepackage{tabularx}
+%pour utiliser \floatbarrier
+%\usepackage{placeins}
+%\usepackage{floatrow}
+%espacement entre les lignes
+\usepackage{setspace}
+\usepackage[hypertexnames=false, pdftex]{hyperref}
+\hypersetup{ colorlinks = true, linkcolor = black, urlcolor = blue, citecolor = blue }
+%\usepackage[T1]{fontenc}
+\usepackage[top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
+%Pour les galerie d'images
+\usepackage{subfig}
+
+
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset { %
+    language=C++,
+    backgroundcolor=\color{blue!5}, % set backgroundcolor
+    basicstyle=\footnotesize,% basic font setting
+    %basicstyle=\ttfamily,
+    keywordstyle=\color{blue}\ttfamily,
+    stringstyle=\color{red}\ttfamily,
+    commentstyle=\color{green}\ttfamily,
+    morecomment=[l][\color{magenta}]{\#},
+    showlines=true
+}
+
+
+
+%======================== DEBUT DU DOCUMENT ========================
+
+\begin{document}
+
+%régler l'espacement entre les lignes
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+%page de garde
+\begin{titlepage}
+\begin{center}
+
+% Upper part of the page. The '~' is needed because only works if a paragraph has started.
+% \includegraphics[width=0.35\textwidth]{./logo}~\\[1cm]
+
+\textsc{\LARGE Université Paris8}\\[1.5cm]
+
+\textsc{\Large }\\[0.5cm]
+
+% Title
+\HRule \\[0.4cm]
+
+{\huge \bfseries gAgent \\
+Framework multi-agent en C++ \\[0.4cm] }
+
+\HRule \\[1.5cm]
+
+% Author and supervisor
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Auteur:}\\
+Halim Djerroud \textit{hdd@ai.univ-paris8.fr}\\
+\end{flushleft}
+\end{minipage}
+
+
+\vfill
+
+% Bottom of the page
+{\large \today}
+
+\end{center}
+\end{titlepage}
+
+
+
+
+
+\tableofcontents
+\thispagestyle{empty}
+\setcounter{page}{0}
+%ne pas numéroter le sommaire
+
+\newpage
+
+%espacement entre les lignes d'un tableau
+\renewcommand{\arraystretch}{1.5}
+
+%====================== INCLUSION DES PARTIES ======================
+
+\input{./ch1.tex}
+
+
+%récupérer les citation avec "/footnotemark"
+\nocite{*}
+
+%choix du style de la biblio
+\bibliographystyle{plain}
+%inclusion de la biblio
+%\bibliography{bibliographie.bib}
+%voir wiki pour plus d'information sur la syntaxe des entrées d'une bibliographie
+
+\end{document}

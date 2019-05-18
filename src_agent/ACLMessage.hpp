@@ -51,9 +51,6 @@ public:
 	static const char* SUBSCRIBE;		// Communication par l'expéditeur d'une demande d'un objet donnée par une référence envoyé par l'expéditeur, et de renotifier l'agent ayant souscrit dès que l'objet en question change.
 
 private:
-
-
-
 	std::vector <AgentID*> listRecevers;
 
 };

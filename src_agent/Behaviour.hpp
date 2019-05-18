@@ -34,6 +34,9 @@ public:
 	virtual void action();
 	virtual bool done();
 
+	virtual void onStart();
+	virtual void onEnd();
+
 	virtual int doDelete();
 	virtual int doActivate();
 	virtual int doSuspend();
@@ -48,6 +51,10 @@ public:
 
 };
 
+/*
+ *  SimpleBehaviour
+ */
+
 class SimpleBehaviour: public Behaviour {
 public:
 	SimpleBehaviour();
@@ -56,20 +63,15 @@ public:
 	Agent* thisAgent;
 };
 
-class CompositeBehaviour: public Behaviour {
-public:
-	CompositeBehaviour();
-	CompositeBehaviour(Agent*);
-	virtual ~CompositeBehaviour();
-};
+
 
 class OneShotBehaviour: public SimpleBehaviour {
 public:
 	OneShotBehaviour();
 	OneShotBehaviour(Agent*);
 	virtual void action();
-	virtual bool done();
-	~OneShotBehaviour();
+	virtual bool done() final;
+	virtual ~OneShotBehaviour();
 };
 
 class CyclicBehaviour: public SimpleBehaviour {
@@ -77,26 +79,48 @@ public:
 	CyclicBehaviour();
 	CyclicBehaviour(Agent*);
 	virtual void action();
-	virtual bool done();
-	~CyclicBehaviour();
+	virtual bool done() final;
+	virtual ~CyclicBehaviour();
 };
 
-class RandomBehaviour: public SimpleBehaviour {
-public:
-	RandomBehaviour();
-	RandomBehaviour(Agent*);
-	virtual void action();
-	virtual bool done();
-	~RandomBehaviour();
-};
+/*
+ *  WakerBehaviour
+ */
 
 class WakerBehaviour: public SimpleBehaviour {
 public:
 	WakerBehaviour();
-	WakerBehaviour(Agent*);
-	virtual void action();
-	virtual bool done();
-	~WakerBehaviour();
+	WakerBehaviour(Agent*,unsigned int);
+	virtual void action() final;
+	virtual bool done() final;
+	virtual void onWake();
+	virtual ~WakerBehaviour();
+private :
+	unsigned int internalTimer;
+};
+
+
+class TickerBehaviour: public SimpleBehaviour {
+public:
+	TickerBehaviour();
+	TickerBehaviour(Agent*,unsigned int);
+	virtual void action() final;
+	virtual bool done() final;
+	virtual void onTick();
+	virtual ~TickerBehaviour();
+private :
+	unsigned int internalTimer;
+};
+
+/*
+ *  CompositeBehaviour
+ */
+/*
+class CompositeBehaviour: public Behaviour {
+public:
+	CompositeBehaviour();
+	CompositeBehaviour(Agent*);
+	virtual ~CompositeBehaviour();
 };
 
 class ParallelBehaviour: public CompositeBehaviour {
@@ -105,7 +129,7 @@ public:
 	ParallelBehaviour(Agent*);
 	virtual void action();
 	virtual bool done();
-	~ParallelBehaviour();
+	virtual ~ParallelBehaviour();
 };
 
 class SequentialBehaviour: public CompositeBehaviour {
@@ -114,7 +138,7 @@ public:
 	SequentialBehaviour(Agent*);
 	virtual void action();
 	virtual bool done();
-	~SequentialBehaviour();
+	virtual ~SequentialBehaviour();
 };
 
 class FSMBehaviour: CompositeBehaviour {
@@ -125,6 +149,9 @@ public:
 	virtual bool done();
 	virtual ~FSMBehaviour();
 };
+
+*/
+
 }
 
 #else

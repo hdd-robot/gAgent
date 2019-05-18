@@ -5,6 +5,9 @@
  *      Author: HD <hdd@ai.univ-paris8.fr>
  */
 
+#ifndef AGENT_H_
+#define AGENT_H_
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <iostream>
@@ -22,20 +25,19 @@
 #include <condition_variable>
 #include <signal.h>
 #include <cstddef>
-
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/impl/io_service.hpp>
-
 #include <boost/bind.hpp>
+#include <mqueue.h>
+#include <map>
+
 
 #include "udp_client_server.hpp"
 #include "Behaviour.hpp"
 #include "AgentID.hpp"
 
-#ifndef AGENT_H_
-#define AGENT_H_
 
 
 #define SIG_AGENT_DELETE 	(__SIGRTMIN + 2)
@@ -44,6 +46,8 @@
 #define SIG_AGENT_WAKE 		(__SIGRTMIN + 5)
 #define SIG_AGENT_WAIT 		(__SIGRTMIN + 6)
 #define SIG_AGENT_TRANSIT 	(__SIGRTMIN + 7)
+
+#define SIG_AGENT_INFORM_PARENT 	(__SIGRTMIN + 7)
 
 namespace gagent {
 
@@ -61,6 +65,7 @@ public:
 
 	void control_Thread();
 	void listener_extern_signals_Thread();
+	void control_message();
 
 	void init();
 	void _init(int);
@@ -101,9 +106,24 @@ public:
 
 	void signal_handler(const boost::system::error_code& error, int signal_number);
 
-protected:
+
+
+	void addAttribut(std::string);
+	void removeAttribut(std::string);
+
+	void setAttribut(std::string, std::string);
+	std::string getAttribut(std::string);
+
+	void attributUpdated(); // todo a rendtre privé
 
 private:
+
+
+
+	std::map<std::string,std::string> attributs;
+
+	char* get_msg_queue_name();
+
 	int action_to_do;
 	boost::asio::io_service io_serv;
 

@@ -1,0 +1,39 @@
+
+
+( ap-description
+
+ :name myAPDescription
+
+ :ap-services
+
+  (set
+
+   (ap-service
+
+    :name myIIOPMTP
+
+    :type fipa.mts.mtp.iiop.std
+
+    :addresses
+
+     (sequence
+
+       corbaloc:iiop:agents.fipa.org:10100/acc
+
+       IOR:00000000002233
+
+       corbaname::agents.fipa.org:10000/nameserver#acc))
+
+   (ap-service
+
+    :name myHTTPMTP
+
+    :type fipa.mts.mtp.http.std
+
+    :addresses
+
+     (sequence
+
+       http://agents.fipa.org:8080/acc)))
+
+ 

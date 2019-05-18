@@ -5,5 +5,8 @@
 .directory
 .cproject
 .settings
+scr_agent/build
+test_agent/build
 Debug/
 Release/
+src_agent/libgagentlib.so

@@ -1,8 +1,7 @@
 #include "Agent.hpp"
 
 #define BUFLEN 1024  				// Max length of buffer
-#define PORT_MONITOR  8888   		// PORT
-#define ADR_MONITOR  "127.0.0.1"	// ADR MONITOR
+
 
 namespace gagent {
 
@@ -50,14 +49,17 @@ void Agent::_init(int dbg) {
 	this->agentStatus = AGENT_INITED;
 	std::thread(&Agent::listener_extern_signals_Thread, this).detach();
 	std::thread(&Agent::control_Thread, this).detach();
+	std::thread(&Agent::control_message, this).detach();
+
 
 	if (dbg > 0) {
-		this->udpMonitor = new udp_client_server::udp_client("127.0.0.1", 8888);
+		this->udpMonitor = new udp_client_server::udp_client("127.0.0.1", 40013);
 	}
 
 	std::string pid = boost::lexical_cast<std::string>(chldpid);
 	std::cout << "start Agent :" + pid << std::endl;
 	this->sendMsgMonitor("Start agent PID : " + pid);
+
 
 	this->setup();
 
@@ -74,14 +76,18 @@ void Agent::_init(int dbg) {
 }
 
 void Agent::exthread(Behaviour* beh) {
-	std::unique_lock < std::mutex > lck2(mtxInterThred);
-	while (!runingThred) {
-		cvInterThred.wait(lck2);
-	}
-	beh->action();
+
+	beh->onStart();
 	while (beh->done() == false) {
+		std::unique_lock < std::mutex > lck2(mtxInterThred);
+		while (!runingThred) {
+			cvInterThred.wait(lck2);
+
+		}
+		lck2.unlock();
 		beh->action();
 	}
+	beh->onEnd();
 
 }
 
@@ -121,11 +127,11 @@ void Agent::listener_extern_signals_Thread() {
 void Agent::control_Thread() {
 
 	while (1) {
-
 		std::unique_lock < std::mutex > lck(mtx);
 
-		if (action_to_do <= 3)
+		if (action_to_do <= 3){
 			cv.wait(lck);
+		}
 		std::cout << " control_Thread bien reçu :" + boost::lexical_cast<std::string>(action_to_do) << std::endl;
 
 		switch (action_to_do) {
@@ -174,6 +180,55 @@ void Agent::control_Thread() {
 		}
 		action_to_do = 0;
 
+	}
+}
+
+
+
+char* Agent::get_msg_queue_name() {
+	char* agent_id_str = new char[9];
+	this->agentId.getAgentID().copy(agent_id_str,8);
+	char* mq_name = new char[10];
+	std::strcpy(mq_name,"/");
+	std::strcat(mq_name,agent_id_str);
+	return mq_name;
+}
+
+void Agent::control_message() {
+
+	char* mq_name = this->get_msg_queue_name();
+	mqd_t  mq;
+
+	int    taille = 100;
+	int    max_msg = 5;
+	char*  buffer = (char*)malloc(taille+10);
+
+	struct mq_attr attr;
+	attr.mq_flags   = 0;
+	attr.mq_maxmsg  = max_msg;
+	attr.mq_msgsize = taille;
+	attr.mq_curmsgs = 0;
+
+	//printf(" -> %s",mq_name);
+	std::cout << std::endl;
+
+	mq = mq_open(mq_name, O_RDONLY | O_CREAT , 0666 , &attr);
+
+	if(mq == (mqd_t)-1){
+		perror("mq_open ");
+		std::cout << "Error create Message Queue " << std::endl;
+		this->sendMsgMonitor("Error create Message Queue");
+		return;
+	}
+
+	while (true) {
+		//std::cout << "begin receve " << std::endl;
+		int err = mq_receive(mq, buffer, taille, NULL);
+		if (err < 0 ){
+			perror("mq_receive ");
+		}
+		//std::string sbuffer(buffer);
+		//std::cout << sbuffer << std::endl;
 	}
 }
 
@@ -279,6 +334,11 @@ int Agent::doAction(const int act) {
 		}
 		break;
 	case Agent::AGENT_DELETED:
+		//			//close message queue
+		//			mqd_t mq = mq_open(this->get_msg_queue_name(), O_RDONLY | O_CREAT , 0660 , NULL);
+		//			mq_close(mq);
+		//			mq_unlink(this->get_msg_queue_name());
+		//			std::cout << "close MQ -- " << std::endl;
 		if (isLocal) {
 			pid = boost::lexical_cast<std::string>(chldpid);
 			this->sendMsgMonitor("Stop agent PID : " + pid);
@@ -325,6 +385,66 @@ void Agent::signal_handler(const boost::system::error_code& error, int signal_nu
 		this_agent->doAction(Agent::AGENT_TRANSIT);
 		break;
 	}
+}
+
+
+void Agent::attributUpdated() {
+	std::map<std::string,std::string>::iterator it;
+	it = this->attributs.begin();
+	std::string msg("");
+	while(it != this->attributs.end()){
+		msg += it->first + ":" + it->second + ";" ;
+		++it;
+	}
+
+	char* mq_name = (char*)"/envqueuemsg";
+	mqd_t  mq;
+
+	char*  buffer = (char*)malloc(msg.size()+1);
+
+	msg.copy(buffer, msg.size());
+
+	int    taille = 1000;
+		int    max_msg = 5;
+	struct mq_attr attr;
+	attr.mq_flags   = 0;
+	attr.mq_maxmsg  = max_msg;
+	attr.mq_msgsize = taille;
+	attr.mq_curmsgs = 0;
+
+
+	mq = mq_open(mq_name, O_WRONLY , 0666 , &attr);
+	if(mq == (mqd_t)-1){
+		perror("mq_open  send attributUpdated ");
+		std::cout << "Error create Message Queue " << std::endl;
+		return;
+	}
+
+	 mq_send(mq, buffer, msg.size(), 0);
+
+
+}
+
+void Agent::addAttribut(std::string attr) {
+	this->attributs.insert(std::make_pair(attr,""));
+}
+
+void Agent::removeAttribut(std::string attr) {
+	this->attributs.erase(attr);
+}
+
+void Agent::setAttribut(std::string attr, std::string val) {
+	std::map<std::string,std::string>::iterator it;
+	it=this->attributs.find(attr);
+	if (it != this->attributs.end()) {
+		this->attributs[attr] = val;
+	//	this->attributUpdated();
+	}
+}
+
+std::string Agent::getAttribut(std::string attr) {
+
+	return "";
 }
 
 }

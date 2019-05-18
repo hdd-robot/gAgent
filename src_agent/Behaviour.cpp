@@ -23,14 +23,22 @@ Behaviour::Behaviour(Agent* ag) {
 void Behaviour::action() {
 
 }
+
 bool Behaviour::done() {
 	return true;
+}
+
+void Behaviour::onStart() {
+
+}
+
+void Behaviour::onEnd() {
+
 }
 
 Behaviour::~Behaviour() {
 
 }
-
 
 int Behaviour::doDelete() {
 	return this_agent->doDelete();
@@ -55,7 +63,7 @@ int Behaviour::doWake() {
 int Behaviour::doMove() {
 	return this_agent->doMove();
 }
-int Behaviour::doAction(int a ) {
+int Behaviour::doAction(int a) {
 	return this_agent->doAction(a);
 }
 
@@ -121,48 +129,84 @@ CyclicBehaviour::~CyclicBehaviour() {
 }
 
 // WakerBehaviour
-WakerBehaviour::WakerBehaviour() :
-		SimpleBehaviour() {
+WakerBehaviour::WakerBehaviour() :SimpleBehaviour() {
 
 }
 
-WakerBehaviour::WakerBehaviour(Agent* ag) :
-		SimpleBehaviour(ag) {
-
+WakerBehaviour::WakerBehaviour(Agent* ag,unsigned int timer) : SimpleBehaviour(ag) {
+	this->internalTimer= timer;
 }
+
 void WakerBehaviour::action() {
+	this->internalTimer = this->internalTimer - 1;
+	std::chrono::duration<double, std::milli> timeToWait(1.0);
+	std::chrono::duration<double, std::milli> elapsed;
+	auto start = std::chrono::high_resolution_clock::now();
+	auto end = std::chrono::high_resolution_clock::now();
+	do{
+		end = std::chrono::high_resolution_clock::now();
+		elapsed = end-start;
+	}while(elapsed <= timeToWait);
 
 }
 
 bool WakerBehaviour::done() {
+	if(internalTimer == 0){
+		this->onWake();
+		return true;
+	}
 	return false;
 }
+
+void WakerBehaviour::onWake() {
+
+}
+
 WakerBehaviour::~WakerBehaviour() {
 }
 
-//	RandomBehaviour
-RandomBehaviour::RandomBehaviour() :
-		SimpleBehaviour() {
+
+// TickerBehaviour
+
+TickerBehaviour::TickerBehaviour() :SimpleBehaviour() {
 
 }
 
-RandomBehaviour::RandomBehaviour(Agent* ag) :
-		SimpleBehaviour(ag) {
-
-}
-void RandomBehaviour::action() {
-
+TickerBehaviour::TickerBehaviour(Agent* ag,unsigned int timer) : SimpleBehaviour(ag) {
+	this->internalTimer= timer;
 }
 
-bool RandomBehaviour::done() {
+void TickerBehaviour::action() {
+
+	std::chrono::duration<double, std::milli> elapsed;
+	auto start = std::chrono::high_resolution_clock::now();
+	auto end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> timeToWait(this->internalTimer);
+
+	do{
+		end = std::chrono::high_resolution_clock::now();
+		elapsed = end-start;
+	}while(elapsed <= timeToWait);
+
+	this->onTick();
+}
+
+bool TickerBehaviour::done() {
 	return false;
 }
-RandomBehaviour::~RandomBehaviour() {
+
+void TickerBehaviour::onTick() {
+
 }
+
+TickerBehaviour::~TickerBehaviour() {
+}
+
 
 /**
  * CompositeBehaviour
  */
+/*
 CompositeBehaviour::CompositeBehaviour() :
 		Behaviour() {
 
@@ -216,9 +260,6 @@ bool SequentialBehaviour::done() {
 	return false;
 }
 
-
-
-
 SequentialBehaviour::~SequentialBehaviour() {
 }
 
@@ -242,8 +283,6 @@ bool FSMBehaviour::done() {
 
 FSMBehaviour::~FSMBehaviour() {
 }
-
-
+*/
 }
-
 

@@ -7,7 +7,6 @@
 #include "AgentManager.hpp"
 #include "udp_client_server.hpp"
 
-
 #define BUFLEN 1024  			//Max length of buffer
 
 int main(int ac, char* av[]) {
@@ -16,7 +15,6 @@ int main(int ac, char* av[]) {
 
 	try {
 		cfg.readFile("config.cfg");
-
 	} catch (const libconfig::FileIOException &fioex) {
 		std::cerr << "I/O error while reading file configuration." << std::endl;
 		return (EXIT_FAILURE);
@@ -26,7 +24,7 @@ int main(int ac, char* av[]) {
 		return (EXIT_FAILURE);
 	}
 
-	try{
+	try {
 
 		args->setIpAdrPlt(cfg.lookup("plt_address"));
 		args->setPortPlt (cfg.lookup("plt_port"));
@@ -35,19 +33,15 @@ int main(int ac, char* av[]) {
 		args->setIpAdrMon(cfg.lookup("mon_address"));
 		args->setPortMon (cfg.lookup("mon_port"));
 
-		string name = cfg.lookup("name");
-		cout << "Store name: " << name << endl;
+		//string name = cfg.lookup("name");
+		//cout << "Store name: " << name << endl;
 
-	}
-	catch(const libconfig::SettingNotFoundException &nfex){
+	} catch (const libconfig::SettingNotFoundException &nfex) {
 		cerr << "No setting in configuration file. The defaults values are set" << endl;
+	} catch (...) {
+		std::cerr << "Unknown exception caught\n";
+		cerr << "the defaults values are set" << endl;
 	}
-	catch (...)
-	{
-	    std::cerr << "Unknown exception caught\n";
-	    cerr << "the defaults values are set" << endl;
-	}
-
 
 	int ret = Args::getAppName(ac, av);
 	switch (ret) {
@@ -68,7 +62,8 @@ int main(int ac, char* av[]) {
 		char msg[BUFLEN];
 		int num = 0;
 		if (Args::argsUsageAgentMonitor(ac, av, args) == 0) {
-			udp_client_server::udp_server server(args->getIpAdrMon(), boost::lexical_cast<int>(args->getPortMon()));
+			udp_client_server::udp_server server(args->getIpAdrMon(),
+					boost::lexical_cast<int>(args->getPortMon()));
 			while (1) {
 				num++;
 				server.recv(msg, BUFLEN);
@@ -78,10 +73,7 @@ int main(int ac, char* av[]) {
 		}
 		break;
 
-
-}
-
+	}
 	return 0;
-
 }
 
