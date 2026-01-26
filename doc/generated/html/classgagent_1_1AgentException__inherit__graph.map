@@ -1,0 +1,15 @@
+<map id="gagent::AgentException" name="gagent::AgentException">
+<area shape="rect" id="Node000001" title="Base exception class for gAgent errors." alt="" coords="506,119,675,184"/>
+<area shape="rect" id="Node000003" href="$classgagent_1_1BehaviourException.html" title="Exception for behavior errors." alt="" coords="5,232,203,297"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="493,174,215,235,204,238,202,232,214,229,492,169"/>
+<area shape="rect" id="Node000004" href="$classgagent_1_1CommunicationException.html" title="Exception for communication errors." alt="" coords="227,232,461,297"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="509,192,415,234,413,229,507,187"/>
+<area shape="rect" id="Node000005" href="$classgagent_1_1InitializationException.html" title="Exception for initialization failures." alt="" coords="485,232,697,297"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="593,198,593,232,588,232,588,198"/>
+<area shape="rect" id="Node000006" href="$classgagent_1_1LifecycleException.html" title="Exception for lifecycle management errors." alt="" coords="721,232,911,297"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="668,188,753,229,751,234,666,192"/>
+<area shape="rect" id="Node000007" href="$classgagent_1_1MessageParsingException.html" title="Exception for message parsing errors." alt="" coords="935,232,1171,297"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="690,174,923,229,936,232,934,238,922,235,688,179"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="525,5,656,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="593,84,593,119,588,119,588,84"/>
+</map>

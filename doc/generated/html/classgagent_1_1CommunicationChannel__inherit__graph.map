@@ -1,0 +1,9 @@
+<map id="gagent::CommunicationChannel" name="gagent::CommunicationChannel">
+<area shape="rect" id="Node000001" title="Abstract base for communication channels." alt="" coords="156,5,379,151"/>
+<area shape="rect" id="Node000002" href="$classgagent_1_1CORBAChannel.html" title="CORBA communication channel." alt="" coords="5,199,172,364"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="196,163,163,200,159,197,192,160"/>
+<area shape="rect" id="Node000003" href="$classgagent_1_1MQChannel.html" title="Message Queue communication channel." alt="" coords="196,199,339,364"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="270,165,270,198,265,198,265,165"/>
+<area shape="rect" id="Node000004" href="$classgagent_1_1UDPChannel.html" title="UDP communication channel." alt="" coords="363,199,511,364"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="339,160,370,197,366,200,335,163"/>
+</map>

@@ -1,4 +1,6 @@
 #include "Agent.hpp"
+#include <sys/wait.h>  // For waitpid()
+#include <unistd.h>    // For usleep()
 
 #define BUFLEN 1024  				// Max length of buffer
 
@@ -186,11 +188,19 @@ void Agent::control_Thread() {
 
 
 char* Agent::get_msg_queue_name() {
-	char* agent_id_str = new char[9];
-	this->agentId.getAgentID().copy(agent_id_str,8);
-	char* mq_name = new char[10];
-	std::strcpy(mq_name,"/");
-	std::strcat(mq_name,agent_id_str);
+	// Get agent ID and ensure null termination
+	std::string aid = this->agentId.getAgentID();
+	
+	// Limit to 8 characters for POSIX MQ name compatibility
+	if (aid.length() > 8) {
+		aid = aid.substr(0, 8);
+	}
+	
+	// Allocate space for "/" + agent_id + null terminator
+	char* mq_name = new char[aid.length() + 2];
+	std::strcpy(mq_name, "/");
+	std::strcat(mq_name, aid.c_str());
+	
 	return mq_name;
 }
 
@@ -334,16 +344,43 @@ int Agent::doAction(const int act) {
 		}
 		break;
 	case Agent::AGENT_DELETED:
-		//			//close message queue
-		//			mqd_t mq = mq_open(this->get_msg_queue_name(), O_RDONLY | O_CREAT , 0660 , NULL);
-		//			mq_close(mq);
-		//			mq_unlink(this->get_msg_queue_name());
-		//			std::cout << "close MQ -- " << std::endl;
 		if (isLocal) {
+			// Internal deletion - graceful shutdown
 			pid = boost::lexical_cast<std::string>(chldpid);
 			this->sendMsgMonitor("Stop agent PID : " + pid);
-			kill(chldpid, SIGKILL);  // TODO : chldpid ????
+			
+			// First try graceful shutdown with SIGTERM
+			if (kill(chldpid, SIGTERM) == 0) {
+				// Wait briefly for graceful shutdown
+				int status;
+				pid_t result = waitpid(chldpid, &status, WNOHANG);
+				
+				if (result == 0) {
+					// Process still running, wait a bit more
+					usleep(100000); // 100ms
+					result = waitpid(chldpid, &status, WNOHANG);
+				}
+				
+				// If still running, force kill
+				if (result == 0) {
+					std::cerr << "Agent " << chldpid << " did not respond to SIGTERM, forcing SIGKILL" << std::endl;
+					kill(chldpid, SIGKILL);
+					waitpid(chldpid, &status, 0); // Wait for cleanup
+				}
+			} else {
+				perror("Failed to send termination signal");
+			}
+			
+			// Clean up message queue
+			char* mq_name = this->get_msg_queue_name();
+			mqd_t mq = mq_open(mq_name, O_RDONLY | O_NONBLOCK);
+			if (mq != (mqd_t)-1) {
+				mq_close(mq);
+				mq_unlink(mq_name);
+			}
+			delete[] mq_name;
 		} else {
+			// External deletion request
 			sigqueue(chldpid, SIG_AGENT_DELETE, sval);
 		}
 		break;

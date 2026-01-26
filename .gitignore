@@ -1,12 +1,87 @@
-.gitignore
-#*
-*.o
-.project
-.directory
-.cproject
-.settings
-scr_agent/build
-test_agent/build
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build directories
+build/
+Build/
+BUILD/
+*/build/
+*/Build/
+*/BUILD/
+cmake-build-*/
 Debug/
 Release/
-src_agent/libgagentlib.so
+
+# Compiled files
+*.o
+*.so
+*.a
+*.dylib
+*.dll
+*.exe
+*.out
+a.out
+
+# Generated files
+*.gch
+*.autosave
+*.pro.user
+*.pro.user.*
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+_deps/
+
+# Qt
+*.qm
+.qmake.stash
+
+# OS specific
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp
+
+# Documentation
+doc/html/
+doc/latex/
+*.aux
+*.log
+*.toc
+*.out
+*.blg
+*.bbl
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# Logs
+*.log
+log/
+
+# IDE
+.project
+.cproject
+.settings/
+.directory
+*.kilepr
+
+# Package managers
+conan.lock
+*.egg-info/
+
+# Libraries (already committed)
+!src_agent/libgagentlib.so

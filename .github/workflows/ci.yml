@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04]
+        build_type: [Debug, Release]
+        compiler: [gcc, clang]
+        
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          qtbase5-dev \
+          libboost-all-dev \
+          libconfig++-dev \
+          ninja-build \
+          clang-format
+    
+    - name: Set up compiler
+      if: matrix.compiler == 'clang'
+      run: |
+        echo "CC=clang" >> $GITHUB_ENV
+        echo "CXX=clang++" >> $GITHUB_ENV
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DBUILD_TESTS=ON \
+          -DENABLE_WARNINGS=ON \
+          -G Ninja
+    
+    - name: Build
+      run: cmake --build build --parallel
+    
+    - name: Check formatting
+      if: matrix.compiler == 'gcc' && matrix.build_type == 'Release'
+      run: |
+        find src_agent test_agent -name '*.cpp' -o -name '*.hpp' | \
+          xargs clang-format --dry-run --Werror
+
+  sanitizers:
+    name: Sanitizers
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          qtbase5-dev \
+          libboost-all-dev \
+          libconfig++-dev
+    
+    - name: Build with ASan
+      run: |
+        cmake -B build-asan \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DENABLE_SANITIZERS=ON \
+          -DBUILD_TESTS=ON
+        cmake --build build-asan --parallel
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          qtbase5-dev \
+          libboost-all-dev \
+          libconfig++-dev \
+          cppcheck
+    
+    - name: Run cppcheck
+      run: |
+        cppcheck --enable=all \
+          --suppress=missingIncludeSystem \
+          --suppress=unmatchedSuppression \
+          --error-exitcode=1 \
+          --inline-suppr \
+          -I src_agent \
+          src_agent/ test_agent/ src_manager/ \
+          2>&1 | tee cppcheck.log
+      continue-on-error: true
+    
+    - name: Upload analysis results
+      uses: actions/upload-artifact@v3
+      with:
+        name: static-analysis-results
+        path: cppcheck.log

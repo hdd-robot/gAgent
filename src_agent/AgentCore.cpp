@@ -19,11 +19,16 @@ namespace gagent {
 	std::string AgentCore::portMng  = "";
 
 /**
- * TODO : Intercepter SIGTERM, SIGINT (Ctrl+C) et arreter tous les processus fis du meme groupe du père
+ * @brief Initialize the agent system with proper signal handling
+ * 
+ * Sets up signal handlers for SIGINT, SIGTERM, and SIGQUIT to ensure
+ * graceful shutdown of all child processes in the process group.
  */
-
 void AgentCore::initAgentSystem() {
+	// Register signal handlers for graceful shutdown
 	signal(SIGINT, AgentCore::cache_signal_handler);
+	signal(SIGTERM, AgentCore::cache_signal_handler);
+	signal(SIGQUIT, AgentCore::cache_signal_handler);
 
 	libconfig::Config cfg;
 
@@ -62,11 +67,33 @@ void AgentCore::syncAgentSystem() {
 	waitpid(-1, NULL, 0);
 }
 
-void AgentCore::cache_signal_handler(int _ignored) {
-	std::cout << "killall " << std::endl;
+void AgentCore::cache_signal_handler(int signal_num) {
+	const char* signal_name = "UNKNOWN";
+	switch(signal_num) {
+		case SIGINT:  signal_name = "SIGINT";  break;
+		case SIGTERM: signal_name = "SIGTERM"; break;
+		case SIGQUIT: signal_name = "SIGQUIT"; break;
+	}
+	
+	std::cout << "Caught signal " << signal_name << " (" << signal_num 
+	          << "), shutting down all agents..." << std::endl;
 
-	int pid = getpid();
-	kill(-pid, SIGQUIT);
+	// Get current process group ID
+	pid_t pgid = getpgrp();
+	
+	// Send SIGTERM to all processes in the process group
+	// Using negative PID sends to the entire process group
+	if (kill(-pgid, SIGTERM) == -1) {
+		perror("Failed to send SIGTERM to process group");
+	}
+	
+	// Give processes time to clean up
+	sleep(1);
+	
+	// Force kill any remaining processes
+	kill(-pgid, SIGKILL);
+	
+	exit(EXIT_SUCCESS);
 }
 
 

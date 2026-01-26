@@ -15,21 +15,21 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
 #include <vector>
-#include <unistd.h>
+#include <string>
 #include <boost/lexical_cast.hpp>
 #include <thread>
 #include <functional>
 #include <mutex>
 #include <condition_variable>
-#include <signal.h>
 #include <cstddef>
+
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/asio/impl/io_service.hpp>
-#include <boost/bind.hpp>
 #include <mqueue.h>
 #include <map>
 

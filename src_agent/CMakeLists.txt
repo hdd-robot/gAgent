@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(gAgent)
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
@@ -17,6 +18,7 @@ set( LIBS_TO_LINK
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     Qt5::Widgets
+    config++
 )
 
 
@@ -33,6 +35,8 @@ set(SRCS
 	EnvironnementGui.cpp  
 	VisualAgent.cpp
 	MessageParser.cpp
+	ErrorHandler.cpp
+	CommunicationManager.cpp
     )
     
 set(HEADERS
@@ -49,6 +53,10 @@ set(HEADERS
 	gAgentGui.hpp
 	VisualAgent.hpp
 	MessageParser.hpp
+	Logger.hpp
+	ErrorHandler.hpp
+	BehaviourFactory.hpp
+	CommunicationManager.hpp
     )
     
 add_library(gagent SHARED ${SRCS} ${HEADERS} )
