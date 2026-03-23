@@ -108,7 +108,8 @@ void AgentCore::initEnvironnementSystem(gagent::Environnement& env) {
 	if (pid == 0) {
 		std::string sock_path = gagent::platform::env_socket_path();
 		std::thread(&gagent::Environnement::serve, &env, sock_path).detach();
-		env.start();
+		env.start();    // bloque dans event_loop() jusqu'à la fin de la simulation
+		_exit(0);       // event_loop() terminée — sortie propre sans dupliquer les agents
 	}
 }
 
