@@ -1,8 +1,15 @@
 /**
  * @file Logger.hpp
  * @brief Centralized logging system for gAgent platform
- * @author gAgent Project
- * @date 2025
+ *
+ * Two output modes (independent, both can be active simultaneously):
+ *
+ *   1. Text log  — human-readable, controlled by setLogFile() / LOG_* macros
+ *   2. JSON Lines — structured, one JSON object per line, activated by the
+ *                   GAGENT_LOG environment variable (path to .jsonl file)
+ *
+ * JSON line format:
+ *   {"ts":"2026-03-24T10:00:00.123Z","event":"acl_send","from":"alice","to":"bob",...}
  */
 
 #ifndef GAGENT_LOGGER_HPP_
@@ -15,6 +22,10 @@
 #include <memory>
 #include <chrono>
 #include <iomanip>
+#include <cstdlib>
+#include <initializer_list>
+#include <utility>
+#include <string>
 
 namespace gagent {
 
@@ -50,6 +61,8 @@ public:
         return log_file_.is_open();
     }
 
+    // ── Text log ─────────────────────────────────────────────────────────────
+
     void log(LogLevel level, const std::string& message,
              const std::string& source = "") {
         if (level < min_level_) {
@@ -82,6 +95,9 @@ public:
         if (log_file_.is_open()) {
             log_file_.close();
         }
+        if (json_file_.is_open()) {
+            json_file_.close();
+        }
     }
 
     // Convenience methods
@@ -105,11 +121,56 @@ public:
         log(LogLevel::CRITICAL, msg, src);
     }
 
+    // ── JSON Lines structured log ─────────────────────────────────────────────
+
+    /**
+     * Emit one JSON line.
+     *
+     * Activated by the GAGENT_LOG env var (set at process start).
+     * If GAGENT_LOG is not set the call is a no-op.
+     *
+     * Usage:
+     *   Logger::getInstance().logJson("acl_send", {
+     *       {"from",  "alice"},
+     *       {"to",    "bob"},
+     *       {"perf",  "request"},
+     *       {"content", "hello"},
+     *   });
+     *
+     * Output (one line):
+     *   {"ts":"2026-03-24T10:00:00.123Z","event":"acl_send","from":"alice",...}
+     */
+    void logJson(const std::string& event,
+                 std::initializer_list<std::pair<const char*, std::string>> fields)
+    {
+        if (!json_enabled_) return;
+
+        std::lock_guard<std::mutex> lock(mutex_);
+
+        std::ostringstream oss;
+        oss << "{\"ts\":\"" << getTimestampISO() << "\""
+            << ",\"event\":\"" << jsonEscape(event) << "\"";
+        for (auto& [k, v] : fields) {
+            oss << ",\"" << k << "\":\"" << jsonEscape(v) << "\"";
+        }
+        oss << "}\n";
+
+        json_file_ << oss.str();
+        json_file_.flush();
+    }
+
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
 
 private:
-    Logger() : min_level_(LogLevel::INFO) {}
+    Logger() : min_level_(LogLevel::INFO) {
+        // Activate JSON logging if GAGENT_LOG env var is set
+        const char* path = std::getenv("GAGENT_LOG");
+        if (path && path[0] != '\0') {
+            json_file_.open(path, std::ios::app);
+            json_enabled_ = json_file_.is_open();
+        }
+    }
 
     ~Logger() {
         close();
@@ -138,9 +199,50 @@ private:
         return oss.str();
     }
 
-    std::mutex mutex_;
-    LogLevel min_level_;
+    /** ISO 8601 UTC timestamp with millisecond precision. */
+    std::string getTimestampISO() const {
+        auto now = std::chrono::system_clock::now();
+        auto time_t = std::chrono::system_clock::to_time_t(now);
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch()) % 1000;
+
+        std::ostringstream oss;
+        oss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H:%M:%S")
+            << "." << std::setfill('0') << std::setw(3) << ms.count() << "Z";
+        return oss.str();
+    }
+
+    /** Escape a string for JSON (backslash, double-quote, control chars). */
+    static std::string jsonEscape(const std::string& s) {
+        std::string out;
+        out.reserve(s.size());
+        for (unsigned char c : s) {
+            switch (c) {
+                case '"':  out += "\\\""; break;
+                case '\\': out += "\\\\"; break;
+                case '\n': out += "\\n";  break;
+                case '\r': out += "\\r";  break;
+                case '\t': out += "\\t";  break;
+                default:
+                    if (c < 0x20) {
+                        // control character
+                        char buf[8];
+                        snprintf(buf, sizeof(buf), "\\u%04x", c);
+                        out += buf;
+                    } else {
+                        out += static_cast<char>(c);
+                    }
+            }
+        }
+        return out;
+    }
+
+    std::mutex    mutex_;
+    LogLevel      min_level_;
     std::ofstream log_file_;
+
+    bool          json_enabled_ = false;
+    std::ofstream json_file_;
 };
 
 // Macro helpers for convenient logging
@@ -149,6 +251,9 @@ private:
 #define LOG_WARNING(msg) gagent::Logger::getInstance().warning(msg, __func__)
 #define LOG_ERROR(msg) gagent::Logger::getInstance().error(msg, __func__)
 #define LOG_CRITICAL(msg) gagent::Logger::getInstance().critical(msg, __func__)
+
+// Macro for JSON structured logging
+#define LOG_JSON(event, ...) gagent::Logger::getInstance().logJson(event, {__VA_ARGS__})
 
 } // namespace gagent
 

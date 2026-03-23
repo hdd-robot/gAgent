@@ -37,4 +37,4 @@ Phase 3 — Neuro-symbolique 🎯
 - [x] **Contract Net** (FIPA SC00029H) : ``ContractNetInitiator`` / ``ContractNetParticipant``
 - [x] **Subscribe-Notify** (FIPA SC00035H) : ``SubscribeInitiator`` / ``SubscribeParticipant``
 - [ ] **Autres protocoles FIPA** : Iterated Contract Net, Dutch Auction, etc.
-- [ ] **Logging structuré** : format JSON pour ingestion ELK/Grafana
+- [x] **Logging structuré** : JSON Lines (``GAGENT_LOG``), events ``agent_start/stop/lifecycle``, ``acl_send/recv``

@@ -1,6 +1,7 @@
 #include "Agent.hpp"
 #include <gagent/platform/AMSClient.hpp>
 #include <gagent/platform/DFClient.hpp>
+#include <gagent/utils/Logger.hpp>
 #include <sys/wait.h>  // For waitpid()
 #include <unistd.h>    // For usleep()
 
@@ -71,6 +72,10 @@ void Agent::_init(int dbg) {
 		gagent::platform::AMSClient ams;
 		if (ams.registerAgent(name, chldpid, get_msg_queue_name()))
 			this->agentStatus = AGENT_ACTIVE;
+		LOG_JSON("agent_start",
+		    {"agent", name},
+		    {"pid",   std::to_string(chldpid)}
+		);
 	}
 
 	this->setup();
@@ -149,6 +154,7 @@ void Agent::control_Thread() {
 		switch (action_to_do) {
 		case Agent::AGENT_ACTIVE:
 			std::cout << "AGENT_ACTIVE" << std::endl;
+			LOG_JSON("agent_lifecycle", {"agent", agentId.getAgentName()}, {"state", "active"});
 			{
 				std::unique_lock < std::mutex > lck2(mtxInterThred);
 				runingThred = true;
@@ -157,6 +163,7 @@ void Agent::control_Thread() {
 			break;
 		case Agent::AGENT_SUSPENDED:
 			std::cout << "AGENT_SUSPENDED" << std::endl;
+			LOG_JSON("agent_lifecycle", {"agent", agentId.getAgentName()}, {"state", "suspended"});
 			{
 				std::unique_lock < std::mutex > lck2(mtxInterThred);
 				runingThred = false;
@@ -165,10 +172,12 @@ void Agent::control_Thread() {
 			break;
 		case Agent::AGENT_TRANSIT:
 			std::cout << "AGENT_TRANSIT" << std::endl;
+			LOG_JSON("agent_lifecycle", {"agent", agentId.getAgentName()}, {"state", "transit"});
 			// pas définie encore
 			break;
 		case Agent::AGENT_WAITING:
 			std::cout << "AGENT_WAITING" << std::endl;
+			LOG_JSON("agent_lifecycle", {"agent", agentId.getAgentName()}, {"state", "waiting"});
 			{
 				std::unique_lock < std::mutex > lck2(mtxInterThred);
 				runingThred = false;
@@ -181,6 +190,7 @@ void Agent::control_Thread() {
 			break;
 		case Agent::AGENT_WAKING:
 			std::cout << "AGENT_WAKING" << std::endl;
+			LOG_JSON("agent_lifecycle", {"agent", agentId.getAgentName()}, {"state", "waking"});
 			{
 				std::unique_lock < std::mutex > lck2(mtxInterThred);
 				runingThred = true;
@@ -352,6 +362,10 @@ int Agent::doAction(const int act) {
 			{
 				std::string name = agentId.getAgentName();
 				if (name.empty()) name = agentId.getAgentID();
+				LOG_JSON("agent_stop",
+				    {"agent", name},
+				    {"pid",   std::to_string(chldpid)}
+				);
 				gagent::platform::AMSClient ams;
 				ams.deregisterAgent(name);
 				gagent::platform::DFClient df;
