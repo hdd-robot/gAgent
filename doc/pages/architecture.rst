@@ -12,15 +12,25 @@ Structure du projet
    │   ├── messaging/           # ACLMessage, AgentIdentifier
    │   ├── env/                 # Environnement, VisualAgent
    │   ├── comm/                # CommunicationManager
+   │   ├── platform/            # AMSClient, DFClient, EnvClient, PlatformConfig
    │   └── utils/               # Logger, ErrorHandler, udp_client_server
    │
-   ├── src/                     # Implémentation privée
+   ├── src/                     # Implémentation privée → libgagent.so
    │   ├── core/
    │   ├── messaging/           # fipa_acl.l, fipa_acl.y, FipaAclDriver
    │   ├── env/
-   │   ├── gui/                 # Qt5 (BUILD_GUI=ON uniquement)
+   │   ├── platform/            # AMSClient, DFClient, EnvClient
    │   ├── comm/
    │   └── utils/
+   │
+   ├── platform/                # Daemon FIPA (BUILD_PLATFORM=ON)
+   │   ├── ams/                 # AMS — registre des agents
+   │   ├── df/                  # DF — annuaire des services
+   │   ├── manager/             # agentmanager CLI
+   │   └── monitor/             # agentmonitor UDP
+   │
+   ├── view/                    # Visualisation web (BUILD_VIEW=ON)
+   │                            # → agentview (HTTP + SVG)
    │
    ├── tests/                   # Tests et démonstrations
    ├── examples/                # Exemples d'usage

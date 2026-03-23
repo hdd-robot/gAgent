@@ -24,6 +24,11 @@ inline const char* df_socket_path() {
     return env ? env : "/tmp/gagent_df.sock";
 }
 
+inline const char* env_socket_path() {
+    const char* env = std::getenv("GAGENT_ENV_SOCK");
+    return env ? env : "/tmp/gagent_env.sock";
+}
+
 } // namespace platform
 } // namespace gagent
 

@@ -9,16 +9,13 @@ Prérequis
    # Debian/Ubuntu
    sudo apt install cmake g++ libboost-all-dev libconfig++-dev flex bison
 
-   # Optionnel (GUI)
-   sudo apt install qtbase5-dev
-
 Compilation
 -----------
 
 .. code-block:: bash
 
    mkdir build && cd build
-   cmake .. -DBUILD_GUI=OFF -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+   cmake .. -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
    make -j$(nproc)
 
 Options CMake
@@ -31,15 +28,18 @@ Options CMake
    * - Option
      - Défaut
      - Description
-   * - ``BUILD_GUI``
-     - ``OFF``
-     - Compile le monitoring Qt5
    * - ``BUILD_TESTS``
      - ``ON``
      - Compile les tests
    * - ``BUILD_EXAMPLES``
      - ``ON``
      - Compile les exemples
+   * - ``BUILD_PLATFORM``
+     - ``ON``
+     - Compile ``agentplatform`` / ``agentmanager`` / ``agentmonitor``
+   * - ``BUILD_VIEW``
+     - ``ON``
+     - Compile ``agentview`` (visualisation web)
 
 Premier agent
 -------------
@@ -107,3 +107,22 @@ Lancer les tests
    cd build/tests
    ./test_gagent         # test de base
    ./two_agents_acl      # échange FIPA ACL Alice ↔ Bob
+   ./test_acl            # tests unitaires ACLMessage (66 assertions)
+
+   # Tests d'intégration plateforme (agentplatform doit tourner)
+   ../platform/agentplatform &
+   ./test_platform       # AMS + DF (24 assertions)
+   kill %1
+
+Visualisation web
+-----------------
+
+.. code-block:: bash
+
+   # Lancer votre simulation
+   ./mon_application &
+
+   # Démarrer le serveur de visualisation
+   ./view/agentview       # → http://localhost:8080
+
+Voir :doc:`visualization` pour la documentation complète.

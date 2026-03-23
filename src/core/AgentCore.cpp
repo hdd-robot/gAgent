@@ -6,6 +6,8 @@
  */
 
 #include "AgentCore.hpp"
+#include <gagent/platform/PlatformConfig.hpp>
+#include <thread>
 
 namespace gagent {
 
@@ -103,7 +105,11 @@ void AgentCore::initEnvironnementSystem(gagent::Environnement& env) {
 		std::cerr << "error fork" << std::endl;
 	}
 	if (pid > 0) return;
-	if (pid == 0) env.start();
+	if (pid == 0) {
+		std::string sock_path = gagent::platform::env_socket_path();
+		std::thread(&gagent::Environnement::serve, &env, sock_path).detach();
+		env.start();
+	}
 }
 
 } /* namespace gagent */

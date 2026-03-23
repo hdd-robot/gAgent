@@ -8,6 +8,10 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <cstring>
 
 
 namespace gagent {
@@ -197,6 +201,121 @@ int Environnement::sendMsgMonitor(std::string msg)
     msg = "Environnement -> " + msg;
     udpMonitor->send(msg.c_str(), BUFLEN);
     return 0;
+}
+
+// ── Env socket server ─────────────────────────────────────────────────────────
+
+static std::string env_readline_fd(int fd)
+{
+    std::string line;
+    char c;
+    while (::read(fd, &c, 1) == 1) {
+        if (c == '\n') break;
+        line += c;
+    }
+    return line;
+}
+
+static std::string env_json_escape(const std::string& s)
+{
+    std::string out;
+    for (char c : s) {
+        if      (c == '"')  out += "\\\"";
+        else if (c == '\\') out += "\\\\";
+        else if (c == '\n') out += "\\n";
+        else if (c == '\r') out += "\\r";
+        else if (c == '\t') out += "\\t";
+        else                out += c;
+    }
+    return out;
+}
+
+void Environnement::serve(const std::string& socket_path)
+{
+    ::unlink(socket_path.c_str());
+
+    int srv = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    if (srv < 0) { perror("env serve socket"); return; }
+
+    struct sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+    std::strncpy(addr.sun_path, socket_path.c_str(), sizeof(addr.sun_path) - 1);
+
+    if (::bind(srv, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0) {
+        perror("env serve bind"); ::close(srv); return;
+    }
+    ::listen(srv, 8);
+
+    while (true) {
+        int cli = ::accept(srv, nullptr, nullptr);
+        if (cli < 0) continue;
+
+        std::string cmd = env_readline_fd(cli);
+        if (!cmd.empty() && cmd.back() == '\r') cmd.pop_back();
+
+        std::string response;
+
+        if (cmd == "GET_AGENTS") {
+            std::ostringstream js;
+            js << "{\"width\":" << map_width
+               << ",\"height\":" << map_height
+               << ",\"agents\":[";
+
+            std::lock_guard<std::mutex> lk(env_mutex_);
+            bool first = true;
+            for (auto& [agent_id, attrs] : list_attr) {
+                auto get = [&](const std::string& key) -> std::string {
+                    auto it = attrs.find(key);
+                    return it != attrs.end() ? it->second : "";
+                };
+                auto getf = [&](const std::string& key, float def) -> float {
+                    auto it = attrs.find(key);
+                    if (it == attrs.end()) return def;
+                    try { return std::stof(it->second); } catch (...) { return def; }
+                };
+
+                if (!first) js << ",";
+                first = false;
+                js << "{"
+                   << "\"id\":\""      << env_json_escape(get(id))      << "\","
+                   << "\"name\":\""    << env_json_escape(get(name))    << "\","
+                   << "\"shape\":\""   << env_json_escape(get(shape))   << "\","
+                   << "\"color\":\""   << env_json_escape(get(color))   << "\","
+                   << "\"pattern\":\"" << env_json_escape(get(pattern)) << "\","
+                   << "\"x\":"         << getf(pos_x,  0.0f)            << ","
+                   << "\"y\":"         << getf(pos_y,  0.0f)            << ","
+                   << "\"size_x\":"    << getf(size_x, 1.0f)            << ","
+                   << "\"size_y\":"    << getf(size_y, 1.0f)            << ","
+                   << "\"size_z\":"    << getf(size_z, 1.0f)            << ","
+                   << "\"size\":"      << getf(size,   1.0f)            << ","
+                   << "\"val\":\""     << env_json_escape(get(val))     << "\""
+                   << "}";
+            }
+            js << "]}";
+            response = js.str();
+        }
+        else if (cmd == "GET_NSAP") {
+            std::lock_guard<std::mutex> lk(env_mutex_);
+            std::ostringstream js;
+            js << "{\"count\":" << nsap_index_.size() << ",\"snaps\":[";
+            bool first = true;
+            for (auto& [seq, ts] : nsap_index_) {
+                if (!first) js << ",";
+                first = false;
+                js << "{\"seq\":" << seq
+                   << ",\"timestamp\":\"" << env_json_escape(ts) << "\"}";
+            }
+            js << "]}";
+            response = js.str();
+        }
+        else {
+            response = "{\"error\":\"unknown command\"}";
+        }
+
+        response += "\n";
+        ::write(cli, response.c_str(), response.size());
+        ::close(cli);
+    }
 }
 
 } // namespace gagent

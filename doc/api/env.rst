@@ -34,8 +34,54 @@ Méthodes NSAP
 
 Voir :doc:`../pages/nsap` pour des exemples complets.
 
+Socket de visualisation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+``serve(socket_path)`` démarre un serveur Unix socket (dans un thread
+séparé) qui expose ``list_attr`` en JSON. Appelé automatiquement par
+``AgentCore::initEnvironnementSystem()``.
+
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - Commande socket
+     - Réponse
+   * - ``GET_AGENTS``
+     - JSON ``{width, height, agents:[...]}``
+   * - ``GET_NSAP``
+     - JSON ``{count, snaps:[{seq, timestamp},...]}``
+
+Voir :doc:`../pages/visualization` pour l'usage complet.
+
 VisualAgent
 -----------
 
 .. doxygenclass:: gagent::VisualAgent
    :members:
+
+EnvClient
+---------
+
+``gagent::platform::EnvClient`` (``include/gagent/platform/EnvClient.hpp``)
+est le client C++ du socket Environnement.
+
+.. list-table::
+   :widths: 35 65
+   :header-rows: 1
+
+   * - Méthode
+     - Description
+   * - ``getAgents() → string``
+     - Retourne le JSON ``GET_AGENTS`` (chaîne vide si env absent)
+   * - ``getNsap() → string``
+     - Retourne le JSON ``GET_NSAP`` (chaîne vide si env absent)
+
+.. code-block:: cpp
+
+   #include <gagent/platform/EnvClient.hpp>
+
+   gagent::platform::EnvClient env;
+   std::string json = env.getAgents();
+   if (json.empty())
+       std::cerr << "Environnement non disponible\n";
