@@ -107,7 +107,14 @@ public:
 
     void setup() override {
         std::cout << "[LLMAgent] démarrage → " << script_path_ << "\n";
-        addBehaviour(new PythonBehaviour(this, "llm-agent", script_path_, 300));
+        addBehaviour(new PythonBehaviour(
+            this, "llm-agent", script_path_,
+            /*system_prompt=*/"Tu es un expert en systèmes multi-agents FIPA. "
+                              "Réponds de façon concise et précise, en français.",
+            /*model=*/"gpt-4o-mini",
+            /*max_tokens=*/200,
+            /*max_history=*/10
+        ));
     }
     void takeDown() override { acl_unlink("llm-agent"); }
 };
