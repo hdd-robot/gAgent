@@ -13,3 +13,4 @@ endfunction()
 
 add_gagent_example(improved_agent      improved_agent.cpp)
 add_gagent_example(demo_visualization  demo_visualization.cpp)
+add_gagent_example(llm_agent           llm_agent.cpp)

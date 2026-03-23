@@ -88,5 +88,11 @@ log/
 conan.lock
 *.egg-info/
 
+# Secrets — ne jamais commiter
+.env
+.env.*
+*_secrets.*
+openai_key.txt
+
 # Libraries (already committed)
 !src_agent/libgagentlib.so
