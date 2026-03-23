@@ -39,6 +39,7 @@ set(SRCS
     platform/AMSClient.cpp
     platform/DFClient.cpp
     platform/EnvClient.cpp
+    python/PythonBehaviour.cpp
     ${BISON_FipaAclParser_OUTPUTS}
     ${FLEX_FipaAclLexer_OUTPUTS}
 )
