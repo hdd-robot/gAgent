@@ -3,6 +3,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <signal.h>
+#include <cerrno>
 
 #include <sstream>
 #include <cstring>
@@ -54,6 +56,11 @@ void AMS::handle_client(int fd)
         std::string name;
         ss >> name;
         auto rec = lookup(name);
+        if (rec && ::kill(rec->pid, 0) < 0 && errno == ESRCH) {
+            // PID mort → purge silencieuse
+            deregisterAgent(name);
+            rec = std::nullopt;
+        }
         if (rec)
             write_str(fd, "OK " + rec->name + " "
                       + std::to_string(rec->pid) + " "
@@ -67,6 +74,19 @@ void AMS::handle_client(int fd)
         write_str(fd, setState(name, state) ? "OK\n" : "ERROR not_found\n");
 
     } else if (cmd == "LIST") {
+        // Purge les agents dont le PID n'existe plus
+        {
+            std::lock_guard<std::mutex> lk(mutex_);
+            for (auto it = registry_.begin(); it != registry_.end(); ) {
+                if (::kill(it->second.pid, 0) < 0 && errno == ESRCH) {
+                    std::cout << "[AMS] purge (mort) : " << it->second.name
+                              << " (pid=" << it->second.pid << ")\n";
+                    it = registry_.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
         std::lock_guard<std::mutex> lk(mutex_);
         std::string resp = "OK " + std::to_string(registry_.size()) + "\n";
         for (auto& [n, r] : registry_)
