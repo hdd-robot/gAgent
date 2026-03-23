@@ -9,6 +9,7 @@
 #define GAGENT_PLATFORM_SERVICE_HPP_
 
 #include <string>
+#include <sys/types.h>
 
 namespace gagent {
 namespace platform {
@@ -21,6 +22,7 @@ struct Service {
     std::string ontology;             // ontologie utilisée
     std::string interactionProtocol;  // protocole (ex: "fipa-request")
     std::string ownership;            // propriétaire
+    pid_t       pid = 0;              // PID de l'agent (pour détection de mort)
 };
 
 } // namespace platform
