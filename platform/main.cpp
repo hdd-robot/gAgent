@@ -16,6 +16,7 @@
 #include "ams/AMS.hpp"
 #include "df/DF.hpp"
 #include "monitor/Monitor.hpp"
+#include "manager/Manager.hpp"
 
 #include <gagent/platform/PlatformConfig.hpp>
 
@@ -95,10 +96,8 @@ int main(int argc, char* argv[])
     }
 
     case Args::AGENT_MANAGER: {
-        if (Args::argsUsageAgentManager(argc, argv, &args) != 0) return 1;
-        std::cout << "[Manager] démarré\n";
-        // TODO Phase 2 : interface de gestion (lancement/arrêt d'agents)
-        break;
+        gagent::platform::Manager mgr;
+        return mgr.run(argc, argv);
     }
 
     case Args::AGENT_MONITOR: {
