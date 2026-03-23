@@ -330,41 +330,24 @@ int Agent::doAction(const int act) {
 		break;
 	case Agent::AGENT_DELETED:
 		if (isLocal) {
-			// Internal deletion - graceful shutdown
+			// Le child a fini ses behaviours — nettoyage et sortie propre.
+			// NE PAS s'envoyer SIGTERM à soi-même : ça déclencherait
+			// cache_signal_handler qui enverrait SIGTERM à tout le groupe
+			// (boucle infinie de signaux).
 			pid = boost::lexical_cast<std::string>(chldpid);
 			this->sendMsgMonitor("Stop agent PID : " + pid);
-			
-			// First try graceful shutdown with SIGTERM
-			if (kill(chldpid, SIGTERM) == 0) {
-				// Wait briefly for graceful shutdown
-				int status;
-				pid_t result = waitpid(chldpid, &status, WNOHANG);
-				
-				if (result == 0) {
-					// Process still running, wait a bit more
-					usleep(100000); // 100ms
-					result = waitpid(chldpid, &status, WNOHANG);
-				}
-				
-				// If still running, force kill
-				if (result == 0) {
-					std::cerr << "Agent " << chldpid << " did not respond to SIGTERM, forcing SIGKILL" << std::endl;
-					kill(chldpid, SIGKILL);
-					waitpid(chldpid, &status, 0); // Wait for cleanup
-				}
-			} else {
-				perror("Failed to send termination signal");
-			}
-			
-			// Clean up message queue
+
+			// Nettoie la queue de contrôle interne
 			std::string mq_name = this->get_msg_queue_name();
 			mqd_t mq = mq_open(mq_name.c_str(), O_RDONLY | O_NONBLOCK);
 			if (mq != (mqd_t)-1) {
 				mq_close(mq);
 				mq_unlink(mq_name.c_str());
 			}
+
+			_exit(0);  // sortie immédiate du processus child
 		} else {
-			// External deletion request
+			// Demande externe : envoie le signal au child
 			sigqueue(chldpid, SIG_AGENT_DELETE, sval);
 		}
 		break;
