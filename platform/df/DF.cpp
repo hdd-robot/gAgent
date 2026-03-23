@@ -4,6 +4,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <signal.h>
+#include <cerrno>
 #include <sstream>
 #include <cstring>
 #include <thread>
@@ -51,7 +53,7 @@ void DF::handle_client(int fd)
 
     if (cmd == "REGISTER") {
         Service svc;
-        ss >> svc.agentName >> svc.type >> svc.name
+        ss >> svc.agentName >> svc.pid >> svc.type >> svc.name
            >> svc.language >> svc.ontology
            >> svc.interactionProtocol >> svc.ownership;
         // "-" means empty
@@ -68,6 +70,18 @@ void DF::handle_client(int fd)
         write_str(fd, "OK\n");
 
     } else if (cmd == "SEARCH" || cmd == "SEARCH_ONT") {
+        // Purge les services dont le PID n'existe plus
+        {
+            std::lock_guard<std::mutex> lk(mutex_);
+            services_.erase(
+                std::remove_if(services_.begin(), services_.end(),
+                    [](const Service& s) {
+                        return s.pid > 0
+                            && ::kill(s.pid, 0) < 0
+                            && errno == ESRCH;
+                    }),
+                services_.end());
+        }
         std::string type, ontology;
         ss >> type;
         std::vector<Service> found;
@@ -75,7 +89,6 @@ void DF::handle_client(int fd)
             ss >> ontology;
             found = search(type, ontology);
         } else if (type.empty() || type == "*") {
-            // joker : retourne tous les services
             std::lock_guard<std::mutex> lk(mutex_);
             found = services_;
         } else {

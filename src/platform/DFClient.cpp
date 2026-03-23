@@ -80,6 +80,7 @@ bool DFClient::registerService(const std::string& agentName,
                                 const std::string& ownership)
 {
     std::string cmd = "REGISTER " + agentName
+                    + " " + std::to_string(::getpid())
                     + " " + type
                     + " " + serviceName
                     + " " + language
