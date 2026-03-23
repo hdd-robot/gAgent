@@ -56,20 +56,30 @@ int main(int argc, char* argv[])
 
     case Args::AGENT_PLATFORM: {
         if (Args::argsUsageAgentPlatform(argc, argv, &args) != 0) return 1;
+
+        // Bloquer SIGINT/SIGTERM avant de créer les threads
+        // (les threads héritent du masque → sigwait dans main les reçoit en exclusivité)
+        sigset_t mask;
+        sigemptyset(&mask);
+        sigaddset(&mask, SIGINT);
+        sigaddset(&mask, SIGTERM);
+        sigprocmask(SIG_BLOCK, &mask, nullptr);
+
         std::cout << "[Platform] AMS + DF démarrés\n";
 
         gagent::platform::AMS ams;
         gagent::platform::DF  df;
 
-        // Serveurs socket Unix pour AMS et DF (boucles bloquantes dans leurs threads)
         std::thread ams_thread([&ams]() {
             ams.serve(gagent::platform::ams_socket_path());
         });
+        ams_thread.detach();
+
         std::thread df_thread([&df]() {
             df.serve(gagent::platform::df_socket_path());
         });
+        df_thread.detach();
 
-        // Thread de commandes interactives (optionnel, ne bloque plus le main)
         std::thread cmd_thread([&ams, &df]() {
             std::string line;
             while (std::getline(std::cin, line)) {
@@ -79,20 +89,11 @@ int main(int argc, char* argv[])
         });
         cmd_thread.detach();
 
-        // Bloquer le main sur SIGINT / SIGTERM
         std::cout << "[Platform] en attente (Ctrl+C pour arrêter)...\n";
-        sigset_t mask;
-        sigemptyset(&mask);
-        sigaddset(&mask, SIGINT);
-        sigaddset(&mask, SIGTERM);
-        sigprocmask(SIG_BLOCK, &mask, nullptr);
         int sig = 0;
         sigwait(&mask, &sig);
         std::cout << "[Platform] arrêt (signal " << sig << ")\n";
-
-        ams_thread.detach();
-        df_thread.detach();
-        break;
+        _exit(0);
     }
 
     case Args::AGENT_MANAGER: {

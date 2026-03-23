@@ -25,7 +25,7 @@ Conventions de code
 - ``std::string`` partout (pas de ``char*``)
 - Headers publics → ``include/gagent/{module}/``
 - Implémentation privée → ``src/{module}/``
-- Pas d'include Qt dans les headers publics (``#ifdef BUILD_GUI``)
+- Zéro dépendance externe dans les headers publics (libgagent ne doit pas imposer Qt, gRPC, etc.)
 
 Ajouter un test
 ----------------

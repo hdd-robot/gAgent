@@ -298,6 +298,46 @@ Depuis le code agent :
    // → "00000005 : alice -> calcul terminé en 42ms"
 
 
+Socket Environnement
+--------------------
+
+En complément de l'AMS et du DF, l'``Environnement`` expose ses agents
+visuels via un socket Unix distinct (``/tmp/gagent_env.sock``).
+
+Ce socket est démarré automatiquement par
+``AgentCore::initEnvironnementSystem()`` dans le processus enfant.
+
+Protocole (socket Unix ``/tmp/gagent_env.sock``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: text
+
+   → GET_AGENTS
+   ← {"width":600,"height":300,"agents":[{"id":"...","name":"...","x":0.0,...}]}
+
+   → GET_NSAP
+   ← {"count":1,"snaps":[{"seq":0,"timestamp":"2026-03-23T14:00:00.000"}]}
+
+Intégration C++
+~~~~~~~~~~~~~~~
+
+.. code-block:: cpp
+
+   #include <gagent/platform/EnvClient.hpp>
+
+   gagent::platform::EnvClient env;
+   std::string json_agents = env.getAgents();
+   std::string json_nsap   = env.getNsap();
+
+Variable d'environnement ``GAGENT_ENV_SOCK`` pour surcharger le chemin.
+
+Visualisation web
+~~~~~~~~~~~~~~~~~
+
+``agentview`` interroge ce socket pour construire la page SVG.
+Voir :doc:`visualization` pour la documentation complète.
+
+
 Mode dégradé
 ------------
 
@@ -314,3 +354,7 @@ Si ``agentplatform`` n'est pas lancé, les agents fonctionnent quand même :
 
 Les fonctions de découverte (``lookup``, ``df.search``) retournent des
 résultats vides.
+
+De même, si l'Environnement n'est pas lancé, ``EnvClient::getAgents()``
+retourne une chaîne vide et ``agentview`` affiche le canvas vide avec le
+statut ``env offline``.

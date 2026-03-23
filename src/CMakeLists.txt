@@ -38,6 +38,7 @@ set(SRCS
     utils/udp_client_server.cpp
     platform/AMSClient.cpp
     platform/DFClient.cpp
+    platform/EnvClient.cpp
     ${BISON_FipaAclParser_OUTPUTS}
     ${FLEX_FipaAclLexer_OUTPUTS}
 )

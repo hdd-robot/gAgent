@@ -54,6 +54,9 @@ public:
     virtual void make_agent()        final;
     virtual void readDataFromQueueMsg();
 
+    // Démarre le serveur socket Unix (JSON) — à appeler dans un thread séparé
+    void serve(const std::string& socket_path);
+
     int sendMsgMonitor(std::string msg);
 
     std::string id      = "id";
