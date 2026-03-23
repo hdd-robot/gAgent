@@ -15,8 +15,9 @@ endfunction()
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
-add_gagent_test(test_gagent       main.cpp)
-add_gagent_test(two_agents_acl    two_agents_acl.cpp)
-add_gagent_test(test_nsap         test_nsap.cpp)
-add_gagent_test(test_acl          test_acl.cpp)
-add_gagent_test(test_platform     test_platform.cpp)
+add_gagent_test(test_gagent        main.cpp)
+add_gagent_test(two_agents_acl     two_agents_acl.cpp)
+add_gagent_test(test_nsap          test_nsap.cpp)
+add_gagent_test(test_acl           test_acl.cpp)
+add_gagent_test(test_platform      test_platform.cpp)
+add_gagent_test(test_contract_net  test_contract_net.cpp)
