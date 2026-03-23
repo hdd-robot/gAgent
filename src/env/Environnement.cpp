@@ -87,6 +87,7 @@ void Environnement::start()
     init_env();
     link_attribut();
     std::thread(&Environnement::readDataFromQueueMsg, this).detach();
+    event_loop();   // bloquant — garde le processus enfant en vie
 }
 
 // ── Helpers internes ──────────────────────────────────────────────────────────
