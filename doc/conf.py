@@ -17,6 +17,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.todo',
+    'sphinx.ext.graphviz',
     'breathe',
 ]
 
