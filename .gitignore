@@ -95,4 +95,5 @@ conan.lock
 openai_key.txt
 
 # Libraries (already committed)
-!src_agent/libgagentlib.so
+!src_agent/libgagentlib.so*.pyc
+__pycache__/
