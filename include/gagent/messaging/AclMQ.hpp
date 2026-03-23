@@ -16,6 +16,7 @@
 #define GAGENT_ACLMQ_HPP_
 
 #include <gagent/messaging/ACLMessage.hpp>
+#include <gagent/utils/Logger.hpp>
 #include <mqueue.h>
 #include <optional>
 #include <string>
@@ -53,6 +54,17 @@ inline bool acl_send(const std::string& to, const ACLMessage& msg)
 
     int r = mq_send(mq, raw.c_str(), raw.size(), 0);
     mq_close(mq);
+    if (r == 0) {
+        std::string recv = msg.getReceivers().empty() ? to
+                         : msg.getReceivers()[0].name;
+        LOG_JSON("acl_send",
+            {"from",  msg.getSender().name},
+            {"to",    recv},
+            {"perf",  ACLMessage::performativeToString(msg.getPerformative())},
+            {"conv",  msg.getConversationId()},
+            {"content", msg.getContent().substr(0, 120)}
+        );
+    }
     return r == 0;
 }
 
@@ -82,7 +94,17 @@ inline std::optional<ACLMessage> acl_receive(const std::string& my_name,
     mq_close(mq);
 
     if (n <= 0) return std::nullopt;
-    return ACLMessage::parse(std::string(buf.data(), static_cast<size_t>(n)));
+    auto result = ACLMessage::parse(std::string(buf.data(), static_cast<size_t>(n)));
+    if (result) {
+        LOG_JSON("acl_recv",
+            {"to",    my_name},
+            {"from",  result->getSender().name},
+            {"perf",  ACLMessage::performativeToString(result->getPerformative())},
+            {"conv",  result->getConversationId()},
+            {"content", result->getContent().substr(0, 120)}
+        );
+    }
+    return result;
 }
 
 /**
