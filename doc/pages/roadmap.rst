@@ -35,6 +35,6 @@ Phase 3 — Neuro-symbolique 🎯
 - [x] **PythonAgent** : ``PythonBehaviour`` — bridge C++ ↔ Python avec historique,
   config depuis C++ (system_prompt, model, max_tokens), détection crash
 - [x] **Contract Net** (FIPA SC00029H) : ``ContractNetInitiator`` / ``ContractNetParticipant``
-- [ ] **Subscribe-Notify** (FIPA SC00035H)
+- [x] **Subscribe-Notify** (FIPA SC00035H) : ``SubscribeInitiator`` / ``SubscribeParticipant``
 - [ ] **Autres protocoles FIPA** : Iterated Contract Net, Dutch Auction, etc.
 - [ ] **Logging structuré** : format JSON pour ingestion ELK/Grafana
