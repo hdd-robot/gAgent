@@ -15,6 +15,8 @@
 #include <gagent/core/Agent.hpp>
 #include <gagent/core/Behaviour.hpp>
 
+#include <gagent/platform/DFClient.hpp>
+
 #include <cmath>
 #include <cstdio>
 #include <iostream>
@@ -182,7 +184,14 @@ public:
         init_visual(this, "orbiter", "Orbiter", "circle", "#4fc3f7", 28, 28);
         setAttribut("val", "orbit");
         attributUpdated();
+        platform::DFClient df;
+        df.registerService("orbiter", "movement", "circular-orbit",
+                           "fipa-sl", "simulation");
         addBehaviour(new OrbitBehaviour(this, 300, 150, 110));
+    }
+    void takeDown() override {
+        platform::DFClient df;
+        df.deregisterAgent("orbiter");
     }
 };
 
@@ -193,7 +202,14 @@ public:
         init_visual(this, "bouncer", "Bouncer", "square", "#e94560", 26, 26);
         setAttribut("val", "bounce");
         attributUpdated();
+        platform::DFClient df;
+        df.registerService("bouncer", "movement", "horizontal-bounce",
+                           "fipa-sl", "simulation");
         addBehaviour(new BounceBehaviour(this, 50, 75, 5, 20, 580));
+    }
+    void takeDown() override {
+        platform::DFClient df;
+        df.deregisterAgent("bouncer");
     }
 };
 
@@ -204,7 +220,14 @@ public:
         init_visual(this, "patrol", "Patrol", "triangle", "#4caf50", 28, 28);
         setAttribut("val", "patrol");
         attributUpdated();
+        platform::DFClient df;
+        df.registerService("patrol", "movement", "vertical-patrol",
+                           "fipa-sl", "simulation");
         addBehaviour(new PatrolBehaviour(this, 500, 30, 3, 20, 280));
+    }
+    void takeDown() override {
+        platform::DFClient df;
+        df.deregisterAgent("patrol");
     }
 };
 
@@ -215,7 +238,14 @@ public:
         init_visual(this, "figure8", "Figure-8", "diamond", "#ff9800", 26, 26);
         setAttribut("val", "figure-8");
         attributUpdated();
+        platform::DFClient df;
+        df.registerService("figure8", "movement", "lemniscate",
+                           "fipa-sl", "simulation");
         addBehaviour(new LemniscateBehaviour(this, 300, 225, 130));
+    }
+    void takeDown() override {
+        platform::DFClient df;
+        df.deregisterAgent("figure8");
     }
 };
 
@@ -226,7 +256,14 @@ public:
         init_visual(this, "star", "Star", "star", "#ce93d8", 32, 32);
         setAttribut("val", "spiral");
         attributUpdated();
+        platform::DFClient df;
+        df.registerService("star", "movement", "damped-spiral",
+                           "fipa-sl", "simulation");
         addBehaviour(new SpiralBehaviour(this, 300, 150));
+    }
+    void takeDown() override {
+        platform::DFClient df;
+        df.deregisterAgent("star");
     }
 };
 
