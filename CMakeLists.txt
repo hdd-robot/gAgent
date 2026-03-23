@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(BUILD_TESTS    "Build test suite"             ON)
 option(BUILD_EXAMPLES "Build examples"               ON)
+option(BUILD_PLATFORM "Build platform daemon"        ON)
 
 add_subdirectory(src)
 
@@ -15,4 +16,8 @@ endif()
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
+endif()
+
+if(BUILD_PLATFORM)
+    add_subdirectory(platform)
 endif()

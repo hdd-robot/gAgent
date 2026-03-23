@@ -83,7 +83,7 @@ public:
 	void addBehaviour(Behaviour*);
 	void removeBehaviour(Behaviour*);
 
-	AgentID getAgentId();
+	AgentID getAgentId() const;
 
 	int agentStatus;
 	static const int AGENT_UNKNOWN 	= 0;	// Agent not created yet

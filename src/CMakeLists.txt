@@ -36,6 +36,8 @@ set(SRCS
     comm/CommunicationManager.cpp
     utils/ErrorHandler.cpp
     utils/udp_client_server.cpp
+    platform/AMSClient.cpp
+    platform/DFClient.cpp
     ${BISON_FipaAclParser_OUTPUTS}
     ${FLEX_FipaAclLexer_OUTPUTS}
 )
@@ -55,6 +57,8 @@ target_include_directories(gagent
         ${CMAKE_SOURCE_DIR}/include/gagent/comm
         ${CMAKE_SOURCE_DIR}/include/gagent/env
         ${CMAKE_SOURCE_DIR}/include/gagent/utils
+        ${CMAKE_SOURCE_DIR}/include/gagent/platform
+        ${CMAKE_CURRENT_SOURCE_DIR}/platform
         ${Boost_INCLUDE_DIRS}
 )
 

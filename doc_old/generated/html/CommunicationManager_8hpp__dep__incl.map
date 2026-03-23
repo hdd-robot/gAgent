@@ -1,5 +1,0 @@
-<map id="src_agent/CommunicationManager.hpp" name="src_agent/CommunicationManager.hpp">
-<area shape="rect" id="Node000001" title="Manages different communication protocols (UDP, CORBA, Message Queues)" alt="" coords="5,5,281,31"/>
-<area shape="rect" id="Node000002" href="$CommunicationManager_8cpp.html" title="Implementation of communication manager." alt="" coords="6,79,281,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="146,44,146,79,141,79,141,44"/>
-</map>
