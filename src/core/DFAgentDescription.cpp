@@ -22,6 +22,10 @@ void DFAgentDescription::setDFType(const std::string dftype) {
 
 }
 
+std::string DFAgentDescription::getDFType() const {
+	return DFType;
+}
+
 void DFAgentDescription::addDFServices(AgentService* srv) {
 	DFservicesList.push(srv);
 

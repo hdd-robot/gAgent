@@ -1,9 +1,0 @@
-<map id="gagent::EnvironnementGui::createWindow" name="gagent::EnvironnementGui::createWindow">
-<area shape="rect" id="Node000001" title=" " alt="" coords="569,5,765,45"/>
-<area shape="rect" id="Node000002" href="$classgagent_1_1Environnement.html#a02dcafc7f834a9ac9f9e9b7fe62d354f" title=" " alt="" coords="347,5,521,45"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="556,28,522,28,522,23,556,23"/>
-<area shape="rect" id="Node000003" href="$classgagent_1_1AgentCore.html#a5dc9786639b715706959c0148e0f7245" title=" " alt="" coords="108,5,299,45"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="333,28,299,28,299,23,333,23"/>
-<area shape="rect" id="Node000004" href="$main_8cpp.html#ae66f6b31b5ad750f1fe042a706a4e3d4" title=" " alt="" coords="5,13,60,38"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="94,28,60,28,60,23,94,23"/>
-</map>

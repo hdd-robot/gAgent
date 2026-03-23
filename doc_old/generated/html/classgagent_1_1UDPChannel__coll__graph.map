@@ -1,5 +1,0 @@
-<map id="gagent::UDPChannel" name="gagent::UDPChannel">
-<area shape="rect" id="Node000001" title="UDP communication channel." alt="" coords="43,199,191,364"/>
-<area shape="rect" id="Node000002" href="$classgagent_1_1CommunicationChannel.html" title="Abstract base for communication channels." alt="" coords="5,5,228,151"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="119,165,119,198,114,198,114,165"/>
-</map>

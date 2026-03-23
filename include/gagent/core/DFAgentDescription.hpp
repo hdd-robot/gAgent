@@ -20,6 +20,7 @@ public:
 	DFAgentDescription();
 	void setAgentID(AgentID*);
 	void setDFType(const std::string);
+	std::string getDFType() const;
 
 	void addDFServices(AgentService*);
 

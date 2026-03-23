@@ -1,7 +1,0 @@
-<map id="myTickerBehaviour::onTick" name="myTickerBehaviour::onTick">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,23,161,63"/>
-<area shape="rect" id="Node000002" href="$classgagent_1_1Agent.html#a2fb5f94c03b55f39b255f65e8992c537" title=" " alt="" coords="209,5,433,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="161,32,195,29,196,34,162,38"/>
-<area shape="rect" id="Node000003" href="$classgagent_1_1Agent.html#a7f4cced0b2267f56270a2ff7a99cb12a" title=" " alt="" coords="226,55,417,80"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="162,49,213,54,212,59,161,54"/>
-</map>

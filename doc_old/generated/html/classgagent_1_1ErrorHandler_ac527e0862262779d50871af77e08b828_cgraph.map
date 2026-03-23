@@ -1,9 +1,0 @@
-<map id="gagent::ErrorHandler::logSystemError" name="gagent::ErrorHandler::logSystemError">
-<area shape="rect" id="Node000001" title="Log system error with errno." alt="" coords="5,23,163,63"/>
-<area shape="rect" id="Node000002" href="$classgagent_1_1Logger.html#a36315b237c38fb8df398b060757b412f" title=" " alt="" coords="233,5,391,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="163,32,219,26,219,31,163,37"/>
-<area shape="rect" id="Node000004" href="$classgagent_1_1Logger.html#a6a2789e70725b2ad1ff167cf4d45ec15" title="Get singleton instance." alt="" coords="211,55,413,80"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="163,49,197,53,197,58,163,54"/>
-<area shape="rect" id="Node000003" href="$classgagent_1_1Logger.html#a1ec9d335f18c396897d5f4d6812482a2" title="Log a message." alt="" coords="461,5,608,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="392,15,447,15,447,21,392,21"/>
-</map>

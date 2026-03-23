@@ -1,4 +1,6 @@
 #include "Agent.hpp"
+#include <gagent/platform/AMSClient.hpp>
+#include <gagent/platform/DFClient.hpp>
 #include <sys/wait.h>  // For waitpid()
 #include <unistd.h>    // For usleep()
 
@@ -62,6 +64,14 @@ void Agent::_init(int dbg) {
 	std::cout << "start Agent :" + pid << std::endl;
 	this->sendMsgMonitor("Start agent PID : " + pid);
 
+	// Enregistrement FIPA auprès de l'AMS
+	{
+		std::string name = agentId.getAgentName();
+		if (name.empty()) name = agentId.getAgentID();
+		gagent::platform::AMSClient ams;
+		if (ams.registerAgent(name, chldpid, get_msg_queue_name()))
+			this->agentStatus = AGENT_ACTIVE;
+	}
 
 	this->setup();
 
@@ -241,7 +251,7 @@ int Agent::sendMsgMonitor(std::string msg) {
 	return 0;
 }
 
-AgentID Agent::getAgentId() {
+AgentID Agent::getAgentId() const {
 	return agentId;
 }
 
@@ -336,6 +346,16 @@ int Agent::doAction(const int act) {
 			// (boucle infinie de signaux).
 			pid = boost::lexical_cast<std::string>(chldpid);
 			this->sendMsgMonitor("Stop agent PID : " + pid);
+
+			// Désenregistrement FIPA : AMS + DF
+			{
+				std::string name = agentId.getAgentName();
+				if (name.empty()) name = agentId.getAgentID();
+				gagent::platform::AMSClient ams;
+				ams.deregisterAgent(name);
+				gagent::platform::DFClient df;
+				df.deregisterAgent(name);
+			}
 
 			// Nettoie la queue de contrôle interne
 			std::string mq_name = this->get_msg_queue_name();

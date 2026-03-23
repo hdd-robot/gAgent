@@ -1,9 +1,0 @@
-<map id="gagent::Agent::doAction" name="gagent::Agent::doAction">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,35,184,60"/>
-<area shape="rect" id="Node000002" href="$classgagent_1_1Agent.html#a75fe7cd3b9ae5ea318c0df53c189f429" title=" " alt="" coords="232,35,461,60"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="184,45,218,45,218,50,184,50"/>
-<area shape="rect" id="Node000003" href="$classgagent_1_1AgentID.html#ad7ae9a1a0cc27ee349da0c86d315b37f" title=" " alt="" coords="509,5,717,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="461,32,495,28,496,34,462,37"/>
-<area shape="rect" id="Node000004" href="$classudp__client__server_1_1udp__client.html#ac296d1fb6a6006bec5f8f14a81367d0a" title="Send a message through this UDP client." alt="" coords="541,55,686,95"/>
-<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="462,57,527,64,527,69,461,62"/>
-</map>

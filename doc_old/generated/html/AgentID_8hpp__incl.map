@@ -1,9 +1,0 @@
-<map id="src_agent/AgentID.hpp" name="src_agent/AgentID.hpp">
-<area shape="rect" id="Node000001" title=" " alt="" coords="47,5,217,31"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,72,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="119,33,66,72,63,68,115,29"/>
-<area shape="rect" id="Node000003" title=" " alt="" coords="96,79,168,104"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="135,31,135,65,129,65,129,31"/>
-<area shape="rect" id="Node000004" title=" " alt="" coords="192,79,251,104"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="148,29,198,68,194,72,145,33"/>
-</map>
