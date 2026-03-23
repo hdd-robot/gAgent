@@ -15,6 +15,7 @@ symboliques (HTN/PDDL) et d'agents neuraux (LLM).
    pages/fipa_acl
    pages/behaviours
    pages/messaging
+   pages/nsap
 
 .. toctree::
    :maxdepth: 2
