@@ -8,6 +8,11 @@
 # Build directories
 build/
 Build/
+build_test/
+
+# Claude / outils internes
+.claude/
+.claire/
 BUILD/
 */build/
 */Build/
