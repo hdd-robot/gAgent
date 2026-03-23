@@ -9,9 +9,6 @@
 #include <ctime>
 #include <iomanip>
 
-#ifdef BUILD_GUI
-#include "../gui/EnvironnementGui.hpp"
-#endif
 
 namespace gagent {
 
@@ -81,22 +78,11 @@ void Environnement::readDataFromQueueMsg()
     }
 }
 
-void Environnement::start(bool gui, unsigned int timer_val)
+void Environnement::start()
 {
     init_env();
     link_attribut();
-
-#ifdef BUILD_GUI
-    auto* env_gui = new EnvironnementGui();
-    env_gui->setEnvPtr(this);
-    int   argc   = 1;
-    char* argv[] = {const_cast<char*>("")};
-    env_gui->createWindow(argc, argv, gui, timer_val);
-#else
-    (void)gui;
-    (void)timer_val;
     std::thread(&Environnement::readDataFromQueueMsg, this).detach();
-#endif
 }
 
 // ── Helpers internes ──────────────────────────────────────────────────────────

@@ -1,0 +1,31 @@
+<map id="src_agent/ErrorHandler.cpp" name="src_agent/ErrorHandler.cpp">
+<area shape="rect" id="Node000001" title="Implementation of error handling utilities." alt="" coords="549,5,747,31"/>
+<area shape="rect" id="Node000002" href="$ErrorHandler_8hpp.html" title="Centralized error handling for gAgent platform." alt="" coords="123,79,253,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="574,33,267,81,267,75,574,28"/>
+<area shape="rect" id="Node000006" href="$Logger_8hpp.html" title="Centralized logging system for gAgent platform." alt="" coords="551,79,644,104"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="642,33,616,69,611,66,637,29"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="669,79,731,104"/>
+<area shape="poly" id="edge13_Node000001_Node000014" title=" " alt="" coords="659,29,686,66,681,69,654,33"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="756,79,823,104"/>
+<area shape="poly" id="edge14_Node000001_Node000015" title=" " alt="" coords="672,28,755,70,753,75,670,33"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,152,64,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="164,106,73,149,71,144,162,102"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="89,152,175,177"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="181,106,152,143,147,140,177,103"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="199,152,286,177"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="199,103,228,140,223,143,195,106"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="311,152,391,177"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="558,107,404,151,403,146,557,101"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="415,152,489,177"/>
+<area shape="poly" id="edge7_Node000006_Node000008" title=" " alt="" coords="575,106,489,148,487,144,573,102"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="513,152,588,177"/>
+<area shape="poly" id="edge8_Node000006_Node000009" title=" " alt="" coords="592,106,568,142,564,139,587,103"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="612,152,676,177"/>
+<area shape="poly" id="edge9_Node000006_Node000010" title=" " alt="" coords="607,103,631,139,627,142,603,106"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="700,152,777,177"/>
+<area shape="poly" id="edge10_Node000006_Node000011" title=" " alt="" coords="621,102,705,143,702,148,619,106"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="801,152,868,177"/>
+<area shape="poly" id="edge11_Node000006_Node000012" title=" " alt="" coords="636,101,789,147,787,152,635,107"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="892,152,967,177"/>
+<area shape="poly" id="edge12_Node000006_Node000013" title=" " alt="" coords="645,100,879,149,878,154,644,105"/>
+</map>

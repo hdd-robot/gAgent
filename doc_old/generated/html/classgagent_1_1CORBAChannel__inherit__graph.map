@@ -1,0 +1,5 @@
+<map id="gagent::CORBAChannel" name="gagent::CORBAChannel">
+<area shape="rect" id="Node000001" title="CORBA communication channel." alt="" coords="33,199,200,364"/>
+<area shape="rect" id="Node000002" href="$classgagent_1_1CommunicationChannel.html" title="Abstract base for communication channels." alt="" coords="5,5,228,151"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="119,165,119,198,114,198,114,165"/>
+</map>

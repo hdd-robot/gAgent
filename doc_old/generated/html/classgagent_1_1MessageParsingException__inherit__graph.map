@@ -1,0 +1,7 @@
+<map id="gagent::MessageParsingException" name="gagent::MessageParsingException">
+<area shape="rect" id="Node000001" title="Exception for message parsing errors." alt="" coords="5,232,241,297"/>
+<area shape="rect" id="Node000002" href="$classgagent_1_1AgentException.html" title="Base exception class for gAgent errors." alt="" coords="39,119,208,184"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="126,198,126,232,121,232,121,198"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="58,5,189,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="126,84,126,119,121,119,121,84"/>
+</map>

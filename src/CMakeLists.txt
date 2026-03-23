@@ -5,12 +5,6 @@ find_package(Threads REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 
-if(BUILD_GUI)
-    set(CMAKE_AUTOMOC ON)
-    find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
-    add_compile_definitions(BUILD_GUI)
-endif()
-
 # Le répertoire de sortie doit exister avant que Bison/Flex s'exécutent
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/messaging)
 
@@ -27,7 +21,6 @@ FLEX_TARGET(FipaAclLexer
 )
 ADD_FLEX_BISON_DEPENDENCY(FipaAclLexer FipaAclParser)
 
-# Sources
 set(SRCS
     core/Agent.cpp
     core/AgentCore.cpp
@@ -46,10 +39,6 @@ set(SRCS
     ${BISON_FipaAclParser_OUTPUTS}
     ${FLEX_FipaAclLexer_OUTPUTS}
 )
-
-if(BUILD_GUI)
-    list(APPEND SRCS gui/EnvironnementGui.cpp)
-endif()
 
 add_library(gagent SHARED ${SRCS})
 
@@ -73,7 +62,3 @@ target_link_libraries(gagent
     PUBLIC  Boost::system Boost::thread
     PRIVATE Threads::Threads config++ rt
 )
-
-if(BUILD_GUI)
-    target_link_libraries(gagent PUBLIC Qt5::Widgets)
-endif()

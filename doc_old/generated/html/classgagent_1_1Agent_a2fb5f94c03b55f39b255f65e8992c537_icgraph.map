@@ -1,0 +1,7 @@
+<map id="gagent::Agent::attributUpdated" name="gagent::Agent::attributUpdated">
+<area shape="rect" id="Node000001" title=" " alt="" coords="209,42,433,67"/>
+<area shape="rect" id="Node000002" href="$classmyTickerBehaviour.html#a39747c572bcbf5c8c9854004d6bda437" title=" " alt="" coords="5,5,161,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="204,43,161,38,162,32,205,38"/>
+<area shape="rect" id="Node000003" href="$classmyAgent.html#a9d091bbdbfbb6ddfe8d1dab59f0bec10" title=" " alt="" coords="21,70,146,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="200,72,147,78,146,73,200,66"/>
+</map>

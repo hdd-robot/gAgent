@@ -1,0 +1,11 @@
+<map id="gagent::Agent::doWake" name="gagent::Agent::doWake">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,35,177,60"/>
+<area shape="rect" id="Node000002" href="$classgagent_1_1Agent.html#a433c7a2f49fe92944f1567324cc8694f" title=" " alt="" coords="225,35,404,60"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="177,45,212,45,212,50,177,50"/>
+<area shape="rect" id="Node000003" href="$classgagent_1_1Agent.html#a75fe7cd3b9ae5ea318c0df53c189f429" title=" " alt="" coords="452,35,681,60"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="404,45,438,45,438,50,404,50"/>
+<area shape="rect" id="Node000004" href="$classgagent_1_1AgentID.html#ad7ae9a1a0cc27ee349da0c86d315b37f" title=" " alt="" coords="729,5,937,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="681,32,715,28,716,34,682,37"/>
+<area shape="rect" id="Node000005" href="$classudp__client__server_1_1udp__client.html#ac296d1fb6a6006bec5f8f14a81367d0a" title="Send a message through this UDP client." alt="" coords="761,55,906,95"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="682,57,747,64,747,69,681,62"/>
+</map>

@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
             LOG_INFO("GUI mode enabled");
         }
         
-        AgentCore::initEnvironnementSystem(env, use_gui, 500);
+        AgentCore::initEnvironnementSystem(env);
         LOG_INFO("Environment system initialized");
         
         // Create and initialize agent
