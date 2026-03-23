@@ -14,12 +14,12 @@
 #include <memory>
 #include <string>
 
-#include "../src_agent/AgentCore.hpp"
-#include "../src_agent/Environnement.hpp"
-#include "../src_agent/Agent.hpp"
-#include "../src_agent/Behaviour.hpp"
-#include "../src_agent/Logger.hpp"
-#include "../src_agent/ErrorHandler.hpp"
+#include <gagent/core/AgentCore.hpp>
+#include <gagent/env/Environnement.hpp>
+#include <gagent/core/Agent.hpp>
+#include <gagent/core/Behaviour.hpp>
+#include <gagent/utils/Logger.hpp>
+#include <gagent/utils/ErrorHandler.hpp>
 
 using namespace gagent;
 

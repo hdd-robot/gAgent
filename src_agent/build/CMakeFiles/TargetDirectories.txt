@@ -1,5 +1,0 @@
-/home/hdd/lab/gAgent/src_agent/build/CMakeFiles/gagent.dir
-/home/hdd/lab/gAgent/src_agent/build/CMakeFiles/edit_cache.dir
-/home/hdd/lab/gAgent/src_agent/build/CMakeFiles/rebuild_cache.dir
-/home/hdd/lab/gAgent/src_agent/build/CMakeFiles/gagent_autogen_timestamp_deps.dir
-/home/hdd/lab/gAgent/src_agent/build/CMakeFiles/gagent_autogen.dir
