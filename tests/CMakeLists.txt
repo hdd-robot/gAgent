@@ -1,12 +1,19 @@
 find_package(Boost COMPONENTS thread system filesystem REQUIRED)
 find_package(Threads REQUIRED)
 
-add_executable(test_gagent main.cpp)
-add_dependencies(test_gagent gagent)
+# ── Helpers communs ───────────────────────────────────────────────────────────
 
-target_include_directories(test_gagent PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_BINARY_DIR}/src/messaging
-)
+function(add_gagent_test target source)
+    add_executable(${target} ${source})
+    add_dependencies(${target} gagent)
+    target_include_directories(${target} PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/src/messaging
+    )
+    target_link_libraries(${target} gagent config++ rt)
+endfunction()
 
-target_link_libraries(test_gagent gagent config++ rt)
+# ── Tests ─────────────────────────────────────────────────────────────────────
+
+add_gagent_test(test_gagent       main.cpp)
+add_gagent_test(two_agents_acl    two_agents_acl.cpp)
