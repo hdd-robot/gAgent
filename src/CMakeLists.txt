@@ -32,9 +32,10 @@ set(SRCS
     core/Agent.cpp
     core/AgentCore.cpp
     core/AgentID.cpp
+    core/AgentService.cpp
     core/Behaviour.cpp
     core/DFAgentDescription.cpp
-    core/AgentService.cpp
+    core/DFService.cpp
     messaging/ACLMessage.cpp
     messaging/FipaAclDriver.cpp
     env/Environnement.cpp
@@ -61,6 +62,10 @@ target_include_directories(gagent
         ${CMAKE_CURRENT_SOURCE_DIR}/messaging
         ${CMAKE_CURRENT_BINARY_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}/messaging
+        ${CMAKE_SOURCE_DIR}/include/gagent/core
+        ${CMAKE_SOURCE_DIR}/include/gagent/comm
+        ${CMAKE_SOURCE_DIR}/include/gagent/env
+        ${CMAKE_SOURCE_DIR}/include/gagent/utils
         ${Boost_INCLUDE_DIRS}
 )
 
