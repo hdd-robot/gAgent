@@ -74,6 +74,10 @@ void DF::handle_client(int fd)
         if (cmd == "SEARCH_ONT") {
             ss >> ontology;
             found = search(type, ontology);
+        } else if (type.empty() || type == "*") {
+            // joker : retourne tous les services
+            std::lock_guard<std::mutex> lk(mutex_);
+            found = services_;
         } else {
             found = search(type);
         }

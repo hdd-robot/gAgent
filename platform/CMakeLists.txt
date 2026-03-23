@@ -6,6 +6,7 @@ add_executable(gAgentPlatform
     ams/AMS.cpp
     df/DF.cpp
     monitor/Monitor.cpp
+    manager/Manager.cpp
 )
 
 target_include_directories(gAgentPlatform PRIVATE
