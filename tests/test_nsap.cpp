@@ -42,7 +42,7 @@ static void mq_inject(const std::string& attrs_str)
     mq_close(mq);
 }
 
-static void wait() { std::this_thread::sleep_for(std::chrono::milliseconds(80)); }
+static void wait() { std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
 
 // Retrouve un VisualAgent par id dans la liste
 static VisualAgent* find(Environnement& env, const std::string& id) {

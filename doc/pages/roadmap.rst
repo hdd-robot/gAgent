@@ -33,5 +33,7 @@ Phase 3 — Neuro-symbolique 🎯
 - [ ] **Moteur HTN** : planificateur hiérarchique embarqué
 - [ ] **Bridge PDDL** : interface vers fast-downward ou un solver externe
 - [ ] **PythonAgent** : agent C++ qui délègue les décisions à un LLM Python
-- [ ] **Protocoles FIPA** : Contract Net, Subscribe-Notify, etc.
+- [x] **Contract Net** (FIPA SC00029H) : ``ContractNetInitiator`` / ``ContractNetParticipant``
+- [ ] **Subscribe-Notify** (FIPA SC00035H)
+- [ ] **Autres protocoles FIPA** : Iterated Contract Net, Dutch Auction, etc.
 - [ ] **Logging structuré** : format JSON pour ingestion ELK/Grafana
