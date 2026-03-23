@@ -33,7 +33,7 @@ public:
 
 	static void syncAgentSystem();
 
-	static void initEnvironnementSystem(gagent::Environnement&, bool gui=false , unsigned int timer_val = 500);
+	static void initEnvironnementSystem(gagent::Environnement&);
 
 
 private:

@@ -1,0 +1,8 @@
+<map id="gagent::UDPChannel::close" name="gagent::UDPChannel::close">
+<area shape="rect" id="Node000001" title="Close the channel." alt="" coords="209,37,365,77"/>
+<area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="321,26,309,19,287,16,268,18,256,23,252,29,254,36,249,38,247,28,253,19,267,13,287,11,311,14,324,21"/>
+<area shape="rect" id="Node000002" href="$classgagent_1_1UDPChannel.html#aa3fda669872fc9674229b1bd7e0c83e4" title=" " alt="" coords="5,5,161,45"/>
+<area shape="poly" id="edge2_Node000001_Node000002" title=" " alt="" coords="196,46,161,40,162,35,196,40"/>
+<area shape="rect" id="Node000003" href="$classgagent_1_1UDPChannel.html#a36bdcd251398d71e03d5778b1ef32e55" title=" " alt="" coords="5,69,161,109"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="196,74,162,80,161,74,196,69"/>
+</map>

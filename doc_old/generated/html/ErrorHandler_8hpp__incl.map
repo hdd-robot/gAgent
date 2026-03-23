@@ -1,0 +1,9 @@
+<map id="src_agent/ErrorHandler.hpp" name="src_agent/ErrorHandler.hpp">
+<area shape="rect" id="Node000001" title="Centralized error handling for gAgent platform." alt="" coords="33,5,231,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,64,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="118,33,63,72,60,68,115,29"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="89,79,175,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="135,31,135,65,129,65,129,31"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="199,79,286,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="151,28,214,69,211,73,148,33"/>
+</map>

@@ -1,0 +1,11 @@
+<map id="src_agent/ErrorHandler.hpp" name="src_agent/ErrorHandler.hpp">
+<area shape="rect" id="Node000001" title="Centralized error handling for gAgent platform." alt="" coords="296,5,495,31"/>
+<area shape="rect" id="Node000002" href="$BehaviourFactory_8hpp.html" title="Factory pattern for creating Behaviour instances." alt="" coords="5,79,233,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="338,37,165,81,163,76,337,31"/>
+<area shape="rect" id="Node000003" href="$CommunicationManager_8hpp.html" title="Manages different communication protocols (UDP, CORBA, Message Queues)" alt="" coords="257,79,533,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="398,44,398,79,393,79,393,44"/>
+<area shape="rect" id="Node000005" href="$ErrorHandler_8cpp.html" title="Implementation of error handling utilities." alt="" coords="558,79,755,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="451,32,615,76,614,81,450,37"/>
+<area shape="rect" id="Node000004" href="$CommunicationManager_8cpp.html" title="Implementation of communication manager." alt="" coords="258,152,533,177"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="398,118,398,152,393,152,393,118"/>
+</map>

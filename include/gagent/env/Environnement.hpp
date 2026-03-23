@@ -15,17 +15,9 @@
 #include <thread>
 #include <gagent/env/VisualAgent.hpp>
 
-// Forward declaration du client UDP (header privé)
 namespace udp_client_server {
     class udp_client;
 }
-
-#ifdef BUILD_GUI
-// Forward declaration seulement - le header complet est inclus dans Environnement.cpp
-namespace gagent {
-    class EnvironnementGui;
-}
-#endif
 
 #define BUFLEN 1024
 
@@ -36,7 +28,7 @@ public:
     Environnement();
     virtual ~Environnement();
 
-    virtual void start(bool gui, unsigned int timer_val) final;
+    virtual void start() final;
 
     virtual void clear_nsap() final;
     virtual int  push_nsap()  final;
@@ -59,7 +51,7 @@ public:
     virtual void link_size_z(std::string v) final { size_z = v; }
     virtual void link_val(std::string v)    final { val    = v; }
 
-    virtual void make_agent()           final;
+    virtual void make_agent()        final;
     virtual void readDataFromQueueMsg();
 
     int sendMsgMonitor(std::string msg);
@@ -84,22 +76,11 @@ public:
     int map_height = 300;
 
 private:
-    // État courant : { agent_id → { attr → val } }
     std::map<std::string, std::map<std::string, std::string>> list_attr;
-
-    // Pile de snapshots : { seq → { agent_id → { attr → val } } }
-    // Indexée par numéro de séquence pour garantir l'ordre LIFO
     std::map<int, std::map<std::string, std::map<std::string, std::string>>> list_snaps;
-
-    // Index { seq → timestamp ISO } renvoyé par get_nsaps()
     std::map<int, std::string> nsap_index_;
-
-    // Compteur de séquence (toujours croissant)
     int nsap_seq_ = 0;
-
-    // Mutex : protège list_attr (écrit par readDataFromQueueMsg en parallèle)
     std::mutex env_mutex_;
-
     udp_client_server::udp_client* udpMonitor = nullptr;
 };
 

@@ -1,0 +1,7 @@
+<map id="gagent::BehaviourException" name="gagent::BehaviourException">
+<area shape="rect" id="Node000001" title="Exception for behavior errors." alt="" coords="5,232,203,297"/>
+<area shape="rect" id="Node000002" href="$classgagent_1_1AgentException.html" title="Base exception class for gAgent errors." alt="" coords="19,119,189,184"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,198,107,232,101,232,101,198"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="39,5,169,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="107,84,107,119,101,119,101,84"/>
+</map>

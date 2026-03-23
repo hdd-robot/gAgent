@@ -1,0 +1,522 @@
+\section{Introduction}
+\textbf{gAgent} est une framework écrit en C++ qui permet de développer un système multi-agent compatible FIPA\footnote{\url{http://www.fipa.org}} en C++ et en python.
+
+
+La spécification FIPA
+
+
+\section{Architecture gAgent}
+
+Dans gAgent, chaque agent est un processus linux. Chaque agent (processus) est composé d'au moins deux threads :
+\begin{itemize}
+ \item Listner :  Ce thread est un thread détaché , il est implémenté sous forme de service, il permet de gérer les événements externes , 
+		  des signaux Linux de \texttt{SIGRTMIN + 2} à \texttt{SIGRTMIN + 7}.
+ \item Controler : Ce thread est un thread détaché aussi, il permet de gérer les verrous.
+\end{itemize}
+
+
+\section{Premier pas}
+Le plus petit programme gAgent:
+
+\begin{lstlisting}
+
+	#include <gagent/AgentCore.hpp>
+	using namespace gagent;
+	int main(int argc, char* argv[]) {
+		AgentCore::initAgentSystem();
+		...
+		AgentCore::stopAgentSystem();
+		return EXIT_SUCCESS;
+	}
+	
+\end{lstlisting}
+
+\texttt{\#include <gagent\/AgentCore.hpp>}: Inclure le moteur principale de gAgent.
+
+\texttt{AgentCore::initAgentSystem()}: Permet d'initialiser \textbf{gAgent} (lire le fichier config).
+
+\texttt{AgentCore::stopAgentSystem()}: Permet de libérer les ressources \textbf{gAgent}.
+
+\section{Créer un premier Agent}
+
+Les agents \textbf{gAgent} peuvent être dans d'un de ces états :
+
+\begin{figure}[thpb]
+  \centering
+    \includegraphics[scale=0.475]{./img/cycle.png}
+    \caption{Cycle de vie d'un agent gAgent.}
+    \label{cycle_de_vie} 
+\end{figure}
+
+
+\begin{itemize}
+ \item Setup: À ce stade l'agent existe en mémoire mais sont état est inconnu (UNKNOWN). Pour activer l'agent il faut appeler la méthode \texttt{doInit()}
+ \item Suspendu: La méthode \texttt{doSuspend()} permet de suspendre un agent qui est dans l'état Active, dans ce nouveau état (Suspendu) 
+		 l'agent arrête tout exécution. Seule la méthode \texttt{doActivate()} permet le faire sortir de cet état pour revenir dans l'état active.
+ \item En attente: La méthode \texttt{doWait()} permet de mettre l'agent en état d'attente d'un événement (généralement un message) puis il revient dans sont état active lors de la réception
+		 de l'événement ou-bien on peut le forcer son retour dans l'état active avec la méthode \texttt{doWake()}
+ \item Active: Dans cet état l'agent est en cours d'exécution.
+ \item Transit: La méthode \texttt{doMove()} permet la migration des agents d'une plateforme à une autre.
+ \item Fin: La méthode \texttt{doDelete()} permet d'arrêter d'un agent en exécution et libérer les ressources.
+\end{itemize}
+
+
+
+\begin{lstlisting}
+
+	#include <gagent/Agent.hpp>
+	#include <gagent/AgentCore.hpp>
+	using namespace gagent;
+
+	class myAgent: public Agent {
+	public:
+	  myAgent() :Agent() {};
+	  virtual ~myAgent() {}
+	  void setup() {
+	    ...
+	  }
+	};
+	
+	int main(int argc, char* argv[]) {
+	    AgentCore::initAgentSystem();
+	    myAgent* g = new myAgent();
+	    
+	    g->init();
+	    
+	    sleep(3);
+	    g->doWait();
+	    
+	    sleep(3);
+	    g->doActivate();
+	    
+	    sleep(3);
+	    g->doMove();
+	    
+	    sleep(3);
+	    g->doSuspend();
+	    
+	    sleep(3);
+	    g->doActivate();
+	    
+	    sleep(3);
+	    g->doWait();
+	    
+	    sleep(3);
+	    g->doWake();
+	    
+	    sleep(3);
+	    g->doDelete();
+	    
+	    delete g;
+	    
+	    AgentCore::stopAgentSystem();
+	    return EXIT_SUCCESS;
+	}
+	
+\end{lstlisting}
+
+Les méthodes : 
+
+\begin{itemize}
+ \item \texttt{setup()} : invoqué lors de l'initialisation de l'agent.
+ \item \texttt{takedown()} :  invoquée avant qu’un agent ne quitte la plateforme.
+\end{itemize}
+
+
+
+\section{Les comportements d'un agent gAgent}
+
+Pour qu'un agent exécute une tâche, ou plusieurs, if faut auparavant définir ces tâches. Les tâches sont appelées \textbf{behaviours} (ou comportements en français)
+sont des instances de la classe \textbf{Behaviour} ou une des ses sous classes.
+
+Pour qu'un agent exécute une tâche il doit lui l'attribuer un ou plusieurs \textbf{Behaviour} par la méthode \texttt{addBehaviour(Behaviour b)} de la classe \textbf{Agent} (voir l'exemple qui suit).
+
+\textbf{gAgent} implémente chaque \textbf{Behaviour} dans un thread, si plusieurs \textbf{Behaviour} sont implémenté par l'agent, alors ces \textbf{Behaviours} sont exécutés en parallèles.
+
+Chaque \textbf{Behaviour} doit obligatoirement implémenter les deux méthodes suivantes :
+
+\begin{itemize}
+ \item \texttt{action()} : l'utilisateur doit implémenter les opérations à exécuter par le \textbf{Behaviour};
+ \item \texttt{done()} : qui indique si le \textbf{Behaviour} en question a terminé son exécution ou pas.
+\end{itemize}
+
+
+Les deux autres méthodes suivantes, dont l'implémentation n'est pas obligatoire mais qui peuvent s'avérer utiles :
+
+\begin{itemize}
+ \item \texttt{onStart()} : appelée juste avant l'exécution de ma méthode \texttt{action()};
+ \item \texttt{onEnd()} : appelée juste après la retournement de \textit{true} par la méthode \texttt{done()}.
+\end{itemize}
+
+Si besoin de savoir quel est le propriétaire d'un \textbf{Behaviour}, et cela peut être connu par le membre \texttt{this\_agent} du \textbf{Behaviour} en question. 
+
+Exemple d'implémentation d'un Behaviour:
+
+\begin{lstlisting}
+
+	#include <iostream>
+	#include <stdio.h>
+
+	#include <gagent/Behaviour.hpp>
+	#include <gagent/Agent.hpp>
+	#include <gagent/AgentCore.hpp>
+
+	using namespace gagent;
+
+	class myCycle: public CyclicBehaviour {
+	public:
+		myCycle(Agent* ag) :CyclicBehaviour(ag) {
+		}
+
+		void action() {
+			std::cout << "Coin " << std::flush;
+			sleep(1);
+		}
+	};
+
+	class myAgent: public Agent {
+	public:
+		myAgent() :Agent() {};
+
+		virtual ~myAgent() {}
+
+		void setup() {
+			myCycle* bb = new myCycle(this);
+			addBehaviour(bb);
+		}
+	};
+
+	int main() {
+
+		AgentCore::initAgentSystem();
+		myAgent* g = new myAgent();
+		g->init();
+
+		AgentCore::syncAgentSystem();
+		AgentCore::stopAgentSystem();
+
+		return 0;
+	}
+	
+\end{lstlisting}
+
+Résultat : 
+
+\begin{lstlisting}[backgroundcolor=\color{green!5}]
+
+	Coin Coin Coin Coin Coin Coin Coin 
+ 
+\end{lstlisting}
+
+
+gAgent propose les Behaviours suivants: 
+
+\begin{itemize}
+ \item OneShotBehaviour
+ \item SimpleBehaviour
+ \item CompositeBehaviour
+ \item CyclicBehaviour
+ \item WakerBehaviour
+ \item ParallelBehaviour
+ \item SequentialBehaviour
+ \item FSMBehaviour
+\end{itemize}
+
+\subsection{Les Behaviours simples}
+
+C'est un Behaviour qui donner au 
+
+Ils sont composés de  Behaviours : OneShotBehaviour, CyclicBehaviour.
+
+\begin{lstlisting}
+	...
+	class mySimpleBehavior: public SimpleBehaviour {
+	public:
+		mySimpleBehavior(Agent* ag) : SimpleBehaviour(ag) {}
+
+		unsigned int i = 0;
+
+		void onStart(){
+			std::cout << "Je sais compter de 1 a 10 " 
+				  << std::endl << std::flush;
+			i=0;
+		}
+
+		void action() {
+			i++;
+			std::cout <<  i  << std::endl << std::flush;
+		}
+
+		bool done(){
+			if (i==10){
+				std::cout << "J ai fini de compter :) ." 
+					  << std::endl << std::flush;
+				return true;
+			}
+			return false;
+		}
+	};
+
+	class myAgent: public Agent {
+	public:
+		myAgent() :Agent() {};
+
+		virtual ~myAgent() {}
+
+		void setup() {
+			mySimpleBehavior* b1 = new mySimpleBehavior(this);
+			addBehaviour(b1);
+
+		}
+	};
+
+\end{lstlisting}
+
+
+
+Résultat : 
+
+\begin{lstlisting}[backgroundcolor=\color{green!5}]
+
+	Je sais compter de 1 a 10 
+	1
+	2
+	3
+	4
+	5
+	6
+	7
+	8
+	9
+	10
+	J ai fini de compter :) .
+
+\end{lstlisting}
+
+
+\subsubsection{OneShotBehaviour}
+
+Le Behaviour \textbf{OneShotBehaviour} permet d'exécuter une tâche une et une seule fois puis il se termine. La classe 
+OneShotBehaviour implémente la méthode \texttt{done()} et elle retourne toujours \textit{true}.
+
+\begin{lstlisting}
+	...
+	using namespace gagent;
+
+	class myBehavior: public OneShotBehaviour {
+	public:
+		myBehavior(Agent* ag) : OneShotBehaviour(ag) {
+		}
+
+		void onStart() {
+			std::cout << " -- start -- " << std::endl << std::flush;
+		}
+
+		void action() {
+			std::cout << "Coin " << std::endl << std::flush;
+		}
+
+		void onEnd() {
+			std::cout << " -- end -- "   << std::endl << std::flush;
+		}
+	};
+
+	class myAgent: public Agent {
+	public:
+		...
+		void setup() {
+			myBehavior* bb = new myBehavior(this);
+			addBehaviour(bb);
+		}
+	};
+
+	int main() {
+		...
+		myAgent* g = new myAgent();
+		g->init();
+		...
+	}
+\end{lstlisting}
+
+Résultat : 
+
+\begin{lstlisting}[backgroundcolor=\color{green!5}]
+
+	-- start -- 
+	Coin 
+	-- end -- 
+
+\end{lstlisting}
+
+Un exemple avec deux Behaviours : 
+
+\begin{lstlisting}
+
+	  ...
+	  class myBehavior1: public OneShotBehaviour {
+	  public:
+		  myBehavior1(Agent* ag) : OneShotBehaviour(ag) {}
+		  void action() {
+			  std::cout << "Comportement 1 " << std::endl << std::flush;
+		  }
+	  };
+
+	  class myBehavior2: public OneShotBehaviour {
+	  public:
+		  myBehavior2(Agent* ag) : OneShotBehaviour(ag) {}
+		  void action() {
+			  std::cout << "Comportement 2 " << std::endl << std::flush;
+		  }
+	  };
+
+	  class myAgent: public Agent {
+	  public:
+		 ...
+		  void setup() {
+			  myBehavior1* b1 = new myBehavior1(this);
+			  addBehaviour(b1);
+
+			  myBehavior2* b2 = new myBehavior2(this);
+			  addBehaviour(b2);
+		  }
+	  };
+	  
+	  int main() {...
+	  
+\end{lstlisting}
+
+Résultat:
+
+\begin{lstlisting}[backgroundcolor=\color{green!5}]
+
+	Comportement 1 
+	Comportement 2 
+
+\end{lstlisting}
+
+
+
+\subsubsection{Cyclic Behaviour}
+
+Le \textbf{Cyclic Behaviour} permet d'exécuter la méthode \textbf{action()} de façon continue indéfiniment. 
+
+\begin{lstlisting}
+	...
+	class myCycle: public CyclicBehaviour {
+	public:
+		myCycle(Agent* ag) :CyclicBehaviour(ag) {
+		}
+
+		void action() {
+			std::cout << "Coin " << std::flush;
+			sleep(1);
+		}
+	};
+
+	class myAgent: public Agent {
+	public:
+		myAgent() :Agent() {};
+
+		virtual ~myAgent() {}
+
+		void setup() {
+			myCycle* bb = new myCycle(this);
+			addBehaviour(bb);
+		}
+	};
+
+	int main() {
+
+		AgentCore::initAgentSystem();
+		myAgent* g = new myAgent();
+		g->init();
+		AgentCore::syncAgentSystem();
+		AgentCore::stopAgentSystem();
+		return 0;
+	}
+	
+\end{lstlisting}
+
+Résultat:
+
+\begin{lstlisting}[backgroundcolor=\color{green!5}]
+
+	Coin Coin Coin Coin Coin Coin Coin Coin Coin Coin ...
+
+\end{lstlisting}
+
+
+
+\subsection{Les Behaviours planifiés}
+
+\subsubsection{WakerBehaviour}
+
+Le \textbf{WakerBehaviour} permet d'exécuter la méthode \texttt{onWake()} après un délai passé en paramètre en millisecondes.
+
+\begin{lstlisting}
+
+	...
+	using namespace gagent;
+
+	class myWakerBehaviour: public WakerBehaviour {
+	public:
+		myWakerBehaviour(Agent* ag) : WakerBehaviour(ag,50000) { }
+
+		void onWake(){
+			std::cout << "Termine " << std::endl << std::flush;
+		}
+	};
+
+	class myAgent: public Agent {
+	public:
+		myAgent() :
+				Agent() {
+		};
+
+		virtual ~myAgent() {
+		}
+
+		void setup() {
+			myWakerBehaviour* b = new myWakerBehaviour(this);
+			addBehaviour(b);
+		}
+	};
+
+	int main() {
+		...
+		g->init();
+		...
+	}
+
+\end{lstlisting}
+
+Résultat:
+
+\begin{lstlisting}[backgroundcolor=\color{green!5}]
+	
+	//apres une attente de 5 secondes.
+	Termine
+
+\end{lstlisting}
+
+\subsubsection{TickerBehaviour}
+
+Le \textbf{TickerBehaviour} est implémenté pour qu'il exécute sa tâche périodiquement par la méthode onTick(). La durée de la période est passée comme argument au constructeur en millisecondes. 
+
+\begin{lstlisting}
+
+\end{lstlisting}
+\section{La communication entre les agents}
+
+
+
+\section{Le plateforme gAgent}
+
+
+
+
+
+
+
+
+

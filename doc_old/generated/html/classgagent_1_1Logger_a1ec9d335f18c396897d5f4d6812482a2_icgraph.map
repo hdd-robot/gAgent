@@ -1,0 +1,17 @@
+<map id="gagent::Logger::log" name="gagent::Logger::log">
+<area shape="rect" id="Node000001" title="Log a message." alt="" coords="437,104,584,129"/>
+<area shape="rect" id="Node000002" href="$classgagent_1_1Logger.html#aff7eeff3f07ab66099f3a8518c4c1d61" title=" " alt="" coords="215,5,385,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="480,98,438,70,388,44,357,33,358,28,390,40,440,66,483,94"/>
+<area shape="rect" id="Node000003" href="$classgagent_1_1Logger.html#a3a791d406a4f65cce197534284b56fee" title=" " alt="" coords="217,55,383,80"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="442,103,354,83,356,77,443,98"/>
+<area shape="rect" id="Node000004" href="$classgagent_1_1Logger.html#a36315b237c38fb8df398b060757b412f" title=" " alt="" coords="221,104,379,129"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="423,119,379,119,379,114,423,114"/>
+<area shape="rect" id="Node000007" href="$classgagent_1_1Logger.html#a3cddbb98eb50ce2f8d594ddf171b1866" title=" " alt="" coords="224,153,376,179"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="443,135,356,156,354,151,442,130"/>
+<area shape="rect" id="Node000008" href="$classgagent_1_1Logger.html#a9e049304ebd5157cb94b43ef61551907" title=" " alt="" coords="211,203,389,228"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="483,140,440,167,390,194,358,205,357,200,388,189,438,163,480,135"/>
+<area shape="rect" id="Node000005" href="$classgagent_1_1ErrorHandler.html#a37e7b39df8195694577f73b66dd632b1" title="Handle exception and log error." alt="" coords="5,65,163,105"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="207,106,162,99,163,94,207,100"/>
+<area shape="rect" id="Node000006" href="$classgagent_1_1ErrorHandler.html#ac527e0862262779d50871af77e08b828" title="Log system error with errno." alt="" coords="5,129,163,169"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="207,133,163,140,162,134,207,128"/>
+</map>

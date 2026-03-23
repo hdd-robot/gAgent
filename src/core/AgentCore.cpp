@@ -97,19 +97,13 @@ void AgentCore::cache_signal_handler(int signal_num) {
 }
 
 
-void AgentCore::initEnvironnementSystem(gagent::Environnement& env, bool gui, unsigned int timer_val) {
-
-		pid_t pid;
-		pid = fork();
-		if (pid == -1) {
-			std::cerr << "error fork" << std::endl;
-		}
-		if (pid > 0) { // the boss
-			return;
-		}
-		if (pid == 0) { // the child
-			env.start(gui,timer_val);
-		}
+void AgentCore::initEnvironnementSystem(gagent::Environnement& env) {
+	pid_t pid = fork();
+	if (pid == -1) {
+		std::cerr << "error fork" << std::endl;
+	}
+	if (pid > 0) return;
+	if (pid == 0) env.start();
 }
 
 } /* namespace gagent */

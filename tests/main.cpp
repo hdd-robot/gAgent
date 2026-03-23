@@ -92,7 +92,7 @@ public:
 int main() {
 	myEnv e;
 	AgentCore::initAgentSystem();
-	AgentCore::initEnvironnementSystem(e, true, 2000);
+	AgentCore::initEnvironnementSystem(e);
 
 	myAgent* g = new myAgent();
 	g->init();

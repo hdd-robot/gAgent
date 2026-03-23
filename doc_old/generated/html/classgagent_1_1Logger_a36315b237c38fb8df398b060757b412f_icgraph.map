@@ -1,0 +1,7 @@
+<map id="gagent::Logger::error" name="gagent::Logger::error">
+<area shape="rect" id="Node000001" title=" " alt="" coords="211,45,369,70"/>
+<area shape="rect" id="Node000002" href="$classgagent_1_1ErrorHandler.html#a37e7b39df8195694577f73b66dd632b1" title="Handle exception and log error." alt="" coords="5,5,163,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="197,46,162,40,163,35,198,40"/>
+<area shape="rect" id="Node000003" href="$classgagent_1_1ErrorHandler.html#ac527e0862262779d50871af77e08b828" title="Log system error with errno." alt="" coords="5,69,163,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="198,74,163,80,162,75,197,69"/>
+</map>

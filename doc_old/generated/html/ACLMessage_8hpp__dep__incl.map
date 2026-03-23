@@ -1,0 +1,9 @@
+<map id="src_agent/ACLMessage.hpp" name="src_agent/ACLMessage.hpp">
+<area shape="rect" id="Node000001" title=" " alt="" coords="135,5,335,31"/>
+<area shape="rect" id="Node000002" href="$ACLMessage_8cpp.html" title=" " alt="" coords="5,79,204,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="203,40,127,81,125,76,201,35"/>
+<area shape="rect" id="Node000003" href="$CommunicationManager_8hpp.html" title="Manages different communication protocols (UDP, CORBA, Message Queues)" alt="" coords="228,79,504,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="270,35,346,76,343,81,267,40"/>
+<area shape="rect" id="Node000004" href="$CommunicationManager_8cpp.html" title="Implementation of communication manager." alt="" coords="229,152,503,177"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="369,118,369,152,363,152,363,118"/>
+</map>
