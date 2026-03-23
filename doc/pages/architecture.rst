@@ -56,13 +56,10 @@ Cycle de vie d'un agent
 États d'un agent
 ----------------
 
-.. code-block:: text
+Le cycle de vie complet (états, transitions, diagramme, signaux RT) est
+documenté dans la page dédiée :
 
-   UNKNOWN → CREATED → INITED → ACTIVE ⇄ SUSPENDED
-                                  │         │
-                                  └── WAITING ┘
-                                       │
-                                  DELETED / TRANSIT
+:doc:`agent_lifecycle`
 
 Communication inter-agents
 --------------------------
