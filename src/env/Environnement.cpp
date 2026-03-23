@@ -5,6 +5,9 @@
 #include <gagent/env/Environnement.hpp>
 #include "../utils/udp_client_server.hpp"
 #include <sstream>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
 
 #ifdef BUILD_GUI
 #include "../gui/EnvironnementGui.hpp"
@@ -69,11 +72,8 @@ void Environnement::readDataFromQueueMsg()
             auto it_attr = m.find(this->id);
             if (it_attr != m.end()) {
                 const std::string& agent_id = it_attr->second;
-                auto it_list = list_attr.find(agent_id);
-                if (it_list != list_attr.end())
-                    it_list->second = m;
-                else
-                    list_attr.insert({agent_id, m});
+                std::lock_guard<std::mutex> lk(env_mutex_);
+                list_attr[agent_id] = m;
             }
         } else {
             std::cout << "message non conforme : " << sbuffer << std::endl;
@@ -99,15 +99,80 @@ void Environnement::start(bool gui, unsigned int timer_val)
 #endif
 }
 
-void Environnement::clear_nsap() {}
+// ── Helpers internes ──────────────────────────────────────────────────────────
 
-int Environnement::push_nsap() { return 0; }
+static std::string current_timestamp()
+{
+    auto now = std::chrono::system_clock::now();
+    auto t   = std::chrono::system_clock::to_time_t(now);
+    auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(
+                   now.time_since_epoch()) % 1000;
+    std::ostringstream ss;
+    ss << std::put_time(std::localtime(&t), "%Y-%m-%dT%H:%M:%S")
+       << '.' << std::setfill('0') << std::setw(3) << ms.count();
+    return ss.str();
+}
 
-int Environnement::pull_nsap() { return 0; }
+// ── NSAP — pile de snapshots ──────────────────────────────────────────────────
 
+/**
+ * Empile l'état courant de tous les agents.
+ * @return numéro de séquence du snapshot créé (taille de la pile)
+ */
+int Environnement::push_nsap()
+{
+    std::lock_guard<std::mutex> lk(env_mutex_);
+    int seq = nsap_seq_++;
+    list_snaps[seq]   = list_attr;
+    nsap_index_[seq]  = current_timestamp();
+    std::cout << "[nsap] push #" << seq
+              << " (" << list_attr.size() << " agents) @ "
+              << nsap_index_[seq] << "\n";
+    return seq + 1;   // taille de la pile
+}
+
+/**
+ * Restaure le snapshot le plus récent (LIFO) et le retire de la pile.
+ * @return taille restante de la pile, -1 si la pile était vide
+ */
+int Environnement::pull_nsap()
+{
+    std::lock_guard<std::mutex> lk(env_mutex_);
+    if (list_snaps.empty()) {
+        std::cerr << "[nsap] pull : pile vide\n";
+        return -1;
+    }
+    // Le plus récent = clé maximale (séquence la plus élevée)
+    auto it = std::prev(list_snaps.end());
+    int  seq = it->first;
+    list_attr = it->second;
+    list_snaps.erase(it);
+    nsap_index_.erase(seq);
+    std::cout << "[nsap] pull #" << seq
+              << " restauré (" << list_attr.size() << " agents)"
+              << ", reste " << list_snaps.size() << " snap(s)\n";
+    return static_cast<int>(list_snaps.size());
+}
+
+/**
+ * Vide toute la pile de snapshots sans modifier l'état courant.
+ */
+void Environnement::clear_nsap()
+{
+    std::lock_guard<std::mutex> lk(env_mutex_);
+    list_snaps.clear();
+    nsap_index_.clear();
+    nsap_seq_ = 0;
+    std::cout << "[nsap] pile vidée\n";
+}
+
+/**
+ * Retourne l'index de la pile : { numéro_séquence → timestamp }.
+ * Le pointeur est valide jusqu'au prochain push/pull/clear.
+ */
 std::map<int, std::string>* Environnement::get_nsaps()
 {
-    return nullptr;
+    return &nsap_index_;
 }
 
 void Environnement::make_agent()
@@ -116,6 +181,7 @@ void Environnement::make_agent()
         delete list_visual_agents[i];
     list_visual_agents.clear();
 
+    std::lock_guard<std::mutex> lk(env_mutex_);
     for (auto& [agent_id, attrs] : list_attr) {
         auto* v = new VisualAgent();
         for (auto& [k, val_str] : attrs) {

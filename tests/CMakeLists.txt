@@ -17,3 +17,4 @@ endfunction()
 
 add_gagent_test(test_gagent       main.cpp)
 add_gagent_test(two_agents_acl    two_agents_acl.cpp)
+add_gagent_test(test_nsap         test_nsap.cpp)
