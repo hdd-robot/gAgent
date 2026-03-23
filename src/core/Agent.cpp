@@ -246,6 +246,7 @@ void Agent::takeDown() {
 }
 
 int Agent::sendMsgMonitor(std::string msg) {
+	if (!this->udpMonitor) return 0;
 	msg = agentId.getAgentID() + " -> " + msg;
 	this->udpMonitor->send(msg.c_str(), BUFLEN);
 	return 0;
