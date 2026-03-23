@@ -63,9 +63,9 @@ doc/latex/
 *.blg
 *.bbl
 
-# Core dumps
-core
-core.*
+# Core dumps (fichiers uniquement, pas les répertoires comme src/core/)
+/core
+core.[0-9]*
 vgcore.*
 
 # Logs
