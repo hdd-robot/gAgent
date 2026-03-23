@@ -9,6 +9,8 @@ option(BUILD_EXAMPLES "Build examples"               ON)
 option(BUILD_PLATFORM "Build platform daemon"        ON)
 option(BUILD_VIEW     "Build web visualization"      ON)
 
+enable_testing()
+
 add_subdirectory(src)
 
 if(BUILD_TESTS)

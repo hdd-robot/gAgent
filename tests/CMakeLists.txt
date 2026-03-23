@@ -11,6 +11,7 @@ function(add_gagent_test target source)
         ${CMAKE_BINARY_DIR}/src/messaging
     )
     target_link_libraries(${target} gagent config++ rt)
+    add_test(NAME ${target} COMMAND ${target})
 endfunction()
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
