@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <iostream>
-#include <string.h>
 #include <stdio.h>
 #include <cstdlib>
 #include <sys/types.h>
@@ -122,7 +121,7 @@ private:
 
 	std::map<std::string,std::string> attributs;
 
-	char* get_msg_queue_name();
+	std::string get_msg_queue_name();
 
 	int action_to_do;
 	boost::asio::io_service io_serv;
@@ -139,8 +138,8 @@ private:
 	std::vector<std::thread> threads;
 	std::thread::id control_thread_id;
 	AgentID agentId;
-	char* agentName;
-	char* agentDateCreate;
+	std::string agentName;
+	std::string agentDateCreate;
 	int debug;
 
 	udp_client_server::udp_client * udpMonitor;

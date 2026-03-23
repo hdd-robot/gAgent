@@ -1,65 +1,110 @@
 /*
  * ACLMessage.hpp
  *
- *  Created on: 15 oct. 2014
- *      Author: cyberjunky
+ * FIPA ACL Message - refonte complète avec parser Flex/Bison
  */
-
-#include <vector>
 
 #ifndef ACLMESSAGE_HPP_
 #define ACLMESSAGE_HPP_
 
-#include "AgentID.hpp"
-
+#include <string>
+#include <vector>
+#include <optional>
 
 namespace gagent {
+
+// Identifiant FIPA d'un agent dans un message ACL
+struct AgentIdentifier {
+    std::string name;
+    std::vector<std::string> addresses;
+
+    AgentIdentifier() = default;
+    explicit AgentIdentifier(std::string n) : name(std::move(n)) {}
+};
 
 class ACLMessage {
 public:
-	ACLMessage(const char*);
-	virtual ~ACLMessage();
+    enum class Performative {
+        ACCEPT_PROPOSAL,
+        AGREE,
+        CANCEL,
+        CFP,
+        CONFIRM,
+        DISCONFIRM,
+        FAILURE,
+        INFORM,
+        INFORM_IF,
+        INFORM_REF,
+        NOT_UNDERSTOOD,
+        PROPAGATE,
+        PROPOSE,
+        PROXY,
+        QUERY_REF,
+        REFUSE,
+        REJECT_PROPOSAL,
+        REQUEST,
+        REQUEST_WHEN,
+        REQUEST_WHENEVER,
+        SUBSCRIBE,
+        UNKNOWN
+    };
 
-	void addReceiver(AgentID);
-	void setLanguage(char*);
-	void setOntology(char*);
-	void setContent(char*);
-	void setPerformative();
-	void createReply();
-	void getTextMsg();
+    ACLMessage() = default;
+    explicit ACLMessage(Performative p) : performative_(p) {}
 
-	static const char* ACCEPT_PROPOSAL; // Communication de l'accord de l'expéditeur d'effectuer une action qui lui a été préalablement soumise.
-	static const char* AGREE;			// Communication de l'accord de l'expéditeur pour effectuer une action, sans doute dans le futur.
-	static const char* CANCEL;			// Communication de l'annulation de l'accord donnée préalablement par l'expéditeur pour effectuer une action.
-	static const char* CFP; 			// Call for Proposal : Communication par l'expéditeur d'une demande d'effectuer une certaine action.
-	static const char* CONFIRM;			// Communication par l'expéditeur de la confirmation de la validité (selon les règles de l'agent) de la proposition préalablement reçue.
-	static const char* DISCONFIRM;		// Communication par l'expéditeur de la confirmation de la non validité (selon les règles de l'agent) de la proposition préalablement reçue.
-	static const char* FAILURE;			// Communication par l'expéditeur de l'échec d'une action essayée.
-	static const char* INFORM;    		// Communication par l'expéditeur d'une proposition, pensée vrai par celui-ci.
-	static const char* INFORM_IF ;		// Communication par l'expéditeur d'une proposition (pensée vrai par celui-ci), et demande au receveur une confirmation ou une non-confirmation. Macro-action impliquant l'usage de "request".
-	static const char* INFORM_REF; 		// Communication par l'expéditeur d'une demande de l’objet qui correspond à une description envoyée. Macro-action impliquant l'usage de "request".
-	static const char* NOT_UNDERSTOOD;  // Communication par l'expéditeur d'une non compréhension d'une action effectuée par le destinataire.
-	static const char* PROPAGATE;		// Communication par l'expéditeur d'un message à propager à des agents dont la description est fournie. Le destinataire du message traite le sous-message à propager comme s'il lui était directement destiné et envoie le message "propate" au agent qu'il a identifié
-	static const char* PROPOSE; 		// Communication par l'expéditeur d'une proposition d'action conditionnée à certaines préconditions données.
-	static const char* PROXY;			// Communication par l'expéditeur d'une demande d'une transmission d'un message à des agents dont la description est donnée.
-	static const char* QUERY_REF;		// Communication par l'expéditeur d'une demande par l'expéditeur de l'objet réferrencé par une expression.
-	static const char* REFUSE; 			// Communication par l'expéditeur de son refus d'effectuer une action donnée, et en donne les raisons.
-	static const char* REJECT_PROPOSAL; // Communication, pendant une négociation, par l'expéditeur de son refus d'effectuer des actions.
-	static const char* REQUEST;			// Communication par l'expéditeur d'une demande au destinataire d'effectuer une action.
-	static const char* REQUEST_WHEN;	// Communication par l'expéditeur d'une demande, au destinataire, d'effectuer une action quand une proposition donnée devient vrai.
-	static const char* REQUEST_WHENEXER;// Communication par l'expéditeur d'une demande, au destinataire, d'effectuer une action dès qu'une proposition donnée devient vrai, et à chaque fois que celle-ci redevient vrai.
-	static const char* SUBSCRIBE;		// Communication par l'expéditeur d'une demande d'un objet donnée par une référence envoyé par l'expéditeur, et de renotifier l'agent ayant souscrit dès que l'objet en question change.
+    // Parse depuis une chaîne FIPA ACL
+    static std::optional<ACLMessage> parse(const std::string& input);
+
+    // Sérialise vers une chaîne FIPA ACL
+    std::string toString() const;
+
+    // Crée une réponse à ce message
+    ACLMessage createReply(Performative p) const;
+
+    // Setters
+    void setPerformative(Performative p)       { performative_ = p; }
+    void setSender(AgentIdentifier aid)        { sender_ = std::move(aid); }
+    void addReceiver(AgentIdentifier aid)      { receivers_.push_back(std::move(aid)); }
+    void setContent(std::string c)             { content_ = std::move(c); }
+    void setLanguage(std::string l)            { language_ = std::move(l); }
+    void setEncoding(std::string e)            { encoding_ = std::move(e); }
+    void setOntology(std::string o)            { ontology_ = std::move(o); }
+    void setProtocol(std::string p)            { protocol_ = std::move(p); }
+    void setConversationId(std::string id)     { conversationId_ = std::move(id); }
+    void setReplyWith(std::string rw)          { replyWith_ = std::move(rw); }
+    void setInReplyTo(std::string irt)         { inReplyTo_ = std::move(irt); }
+
+    // Getters
+    Performative                         getPerformative()   const { return performative_; }
+    const AgentIdentifier&               getSender()         const { return sender_; }
+    const std::vector<AgentIdentifier>&  getReceivers()      const { return receivers_; }
+    const std::string&                   getContent()        const { return content_; }
+    const std::string&                   getLanguage()       const { return language_; }
+    const std::string&                   getEncoding()       const { return encoding_; }
+    const std::string&                   getOntology()       const { return ontology_; }
+    const std::string&                   getProtocol()       const { return protocol_; }
+    const std::string&                   getConversationId() const { return conversationId_; }
+    const std::string&                   getReplyWith()      const { return replyWith_; }
+    const std::string&                   getInReplyTo()      const { return inReplyTo_; }
+
+    // Utilitaires
+    static std::string    performativeToString(Performative p);
+    static Performative   stringToPerformative(const std::string& s);
 
 private:
-	std::vector <AgentID*> listRecevers;
-
+    Performative               performative_{Performative::UNKNOWN};
+    AgentIdentifier            sender_;
+    std::vector<AgentIdentifier> receivers_;
+    std::string                content_;
+    std::string                language_;
+    std::string                encoding_;
+    std::string                ontology_;
+    std::string                protocol_;
+    std::string                conversationId_;
+    std::string                replyWith_;
+    std::string                inReplyTo_;
 };
 
-} /* namespace gagent */
+} // namespace gagent
 
-
-#else
-namespace gagent {
-	class ACLMessage;
-}
 #endif /* ACLMESSAGE_HPP_ */

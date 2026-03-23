@@ -187,31 +187,22 @@ void Agent::control_Thread() {
 
 
 
-char* Agent::get_msg_queue_name() {
-	// Get agent ID and ensure null termination
+std::string Agent::get_msg_queue_name() {
 	std::string aid = this->agentId.getAgentID();
-	
-	// Limit to 8 characters for POSIX MQ name compatibility
 	if (aid.length() > 8) {
 		aid = aid.substr(0, 8);
 	}
-	
-	// Allocate space for "/" + agent_id + null terminator
-	char* mq_name = new char[aid.length() + 2];
-	std::strcpy(mq_name, "/");
-	std::strcat(mq_name, aid.c_str());
-	
-	return mq_name;
+	return "/" + aid;
 }
 
 void Agent::control_message() {
 
-	char* mq_name = this->get_msg_queue_name();
-	mqd_t  mq;
+	std::string mq_name = this->get_msg_queue_name();
+	mqd_t mq;
 
-	int    taille = 100;
-	int    max_msg = 5;
-	char*  buffer = (char*)malloc(taille+10);
+	const int taille = 100;
+	const int max_msg = 5;
+	std::vector<char> buffer(taille + 10);
 
 	struct mq_attr attr;
 	attr.mq_flags   = 0;
@@ -219,12 +210,9 @@ void Agent::control_message() {
 	attr.mq_msgsize = taille;
 	attr.mq_curmsgs = 0;
 
-	//printf(" -> %s",mq_name);
-	std::cout << std::endl;
+	mq = mq_open(mq_name.c_str(), O_RDONLY | O_CREAT, 0666, &attr);
 
-	mq = mq_open(mq_name, O_RDONLY | O_CREAT , 0666 , &attr);
-
-	if(mq == (mqd_t)-1){
+	if (mq == (mqd_t)-1) {
 		perror("mq_open ");
 		std::cout << "Error create Message Queue " << std::endl;
 		this->sendMsgMonitor("Error create Message Queue");
@@ -232,13 +220,10 @@ void Agent::control_message() {
 	}
 
 	while (true) {
-		//std::cout << "begin receve " << std::endl;
-		int err = mq_receive(mq, buffer, taille, NULL);
-		if (err < 0 ){
+		int err = mq_receive(mq, buffer.data(), taille, nullptr);
+		if (err < 0) {
 			perror("mq_receive ");
 		}
-		//std::string sbuffer(buffer);
-		//std::cout << sbuffer << std::endl;
 	}
 }
 
@@ -251,8 +236,8 @@ void Agent::takeDown() {
 }
 
 int Agent::sendMsgMonitor(std::string msg) {
-	msg = boost::lexical_cast<std::string>(agentId.getAgentID()) + " -> " + msg;
-	this->udpMonitor->send((char*) msg.c_str(), BUFLEN);
+	msg = agentId.getAgentID() + " -> " + msg;
+	this->udpMonitor->send(msg.c_str(), BUFLEN);
 	return 0;
 }
 
@@ -372,13 +357,12 @@ int Agent::doAction(const int act) {
 			}
 			
 			// Clean up message queue
-			char* mq_name = this->get_msg_queue_name();
-			mqd_t mq = mq_open(mq_name, O_RDONLY | O_NONBLOCK);
+			std::string mq_name = this->get_msg_queue_name();
+			mqd_t mq = mq_open(mq_name.c_str(), O_RDONLY | O_NONBLOCK);
 			if (mq != (mqd_t)-1) {
 				mq_close(mq);
-				mq_unlink(mq_name);
+				mq_unlink(mq_name.c_str());
 			}
-			delete[] mq_name;
 		} else {
 			// External deletion request
 			sigqueue(chldpid, SIG_AGENT_DELETE, sval);
@@ -434,30 +418,27 @@ void Agent::attributUpdated() {
 		++it;
 	}
 
-	char* mq_name = (char*)"/envqueuemsg";
-	mqd_t  mq;
+	const std::string mq_name = "/envqueuemsg";
+	mqd_t mq;
 
-	char*  buffer = (char*)malloc(msg.size()+1);
+	std::vector<char> buffer(msg.begin(), msg.end());
 
-	msg.copy(buffer, msg.size());
-
-	int    taille = 1000;
-		int    max_msg = 5;
+	const int taille = 1000;
+	const int max_msg = 5;
 	struct mq_attr attr;
 	attr.mq_flags   = 0;
 	attr.mq_maxmsg  = max_msg;
 	attr.mq_msgsize = taille;
 	attr.mq_curmsgs = 0;
 
-
-	mq = mq_open(mq_name, O_WRONLY , 0666 , &attr);
-	if(mq == (mqd_t)-1){
+	mq = mq_open(mq_name.c_str(), O_WRONLY, 0666, &attr);
+	if (mq == (mqd_t)-1) {
 		perror("mq_open  send attributUpdated ");
 		std::cout << "Error create Message Queue " << std::endl;
 		return;
 	}
 
-	 mq_send(mq, buffer, msg.size(), 0);
+	mq_send(mq, buffer.data(), msg.size(), 0);
 
 
 }
