@@ -443,8 +443,7 @@ void Agent::attributUpdated() {
 	}
 
 	mq_send(mq, buffer.data(), msg.size(), 0);
-
-
+	mq_close(mq);
 }
 
 void Agent::addAttribut(std::string attr) {
