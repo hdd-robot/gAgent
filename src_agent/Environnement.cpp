@@ -1,232 +1,145 @@
 /*
-
-/* Environnement.cpp
- *
- *  Created on: 13 juin 2018
- *      Author: ros
+ * Environnement.cpp
  */
 
 #include "Environnement.hpp"
-
+#include <sstream>
 
 namespace gagent {
 
-Environnement::Environnement() {
-	this->id			="id";
-	this->name			="name";
-	this->size			="size";
-	this->size_x		="size_x";
-	this->size_y		="size_y";
-	this->size_z		="size_z";
-	this->color			="color";
-	this->pos_x			="pos_x";
-	this->pos_y			="pos_y";
-	this->val			="val";
-	this->pattern		="pattern";
-
-	bool dbg = 1;
-	if (dbg > 0) {
-		this->udpMonitor = new udp_client_server::udp_client("127.0.0.1", 40013);
-	}
-
-
+static bool parseKeyValSeq(const std::string& input, std::map<std::string, std::string>& m)
+{
+    m.clear();
+    std::istringstream ss(input);
+    std::string token;
+    while (std::getline(ss, token, ';')) {
+        auto sep = token.find(':');
+        if (sep == std::string::npos) continue;
+        m[token.substr(0, sep)] = token.substr(sep + 1);
+    }
+    return !m.empty();
 }
 
-Environnement::~Environnement() {
-
+Environnement::Environnement()
+{
+    udpMonitor = new udp_client_server::udp_client("127.0.0.1", 40013);
 }
 
-void Environnement::readDataFromQueueMsg() {
-	char* mq_name = (char*)"/envqueuemsg";
-	mqd_t  mq;
-
-	int    taille = 1000;
-	int    max_msg = 5;
-	char*  buffer = (char*)malloc(taille);
-
-	struct mq_attr attr;
-	attr.mq_flags   = 0;
-	attr.mq_maxmsg  = max_msg;
-	attr.mq_msgsize = taille;
-	attr.mq_curmsgs = 0;
-
-	mq = mq_open(mq_name, O_RDONLY | O_CREAT , 0666 , &attr);
-	perror("mq_open ");
-	if(mq == (mqd_t)-1){
-		std::cout << "Error create Message Queue " << std::endl; // todo : send monitor
-		return;
-	}
-
-	std::map<std::string,std::string> m;
-	std::map<std::string,std::string>::iterator it_attr;
-	std::map<std::string,std::map<std::string,std::string>>::iterator it_list_attr;
-	int ret;
-	while (true) {
-		//std::cout << "begin receve from agents " << std::endl;
-		ret = mq_receive(mq, buffer, taille, NULL);
-		if(ret < 0){
-			perror("mq_receive ");
-		}
-
-		std::string sbuffer(buffer);
-		m.clear();
-
-		if (MessageParser::parsekeyValSeq(sbuffer,m)){
-			//std::cout << "receved message OK  <" << sbuffer << ">"<< std::endl;
-
-			it_attr = m.find(this->id);
-
-			if(it_attr != m.end()){
-				std::string agent_id = it_attr->second;
-
-				it_list_attr = this->list_attr.find(agent_id);
-
-				if (it_list_attr != this->list_attr.end()){
-					it_list_attr->second = m;
-				}
-				else{
-					this->list_attr.insert(std::make_pair(agent_id, m));
-				}
-			}
-			//std::cout << "end receved message OK  : " << sbuffer << std::endl;
-		}
-		else{
-			std::cout << "receved message not conform  : " << sbuffer << std::endl; // todo : send monitor
-		}
-	}
+Environnement::~Environnement()
+{
+    delete udpMonitor;
 }
 
-//void Environnement::initData() {
-//
-//	std::map<std::string, std::string> inner;
-//
-//	inner.clear();
-//	inner.insert(std::make_pair("id", "agent1"));
-//	inner.insert(std::make_pair("x", "0"));
-//	inner.insert(std::make_pair("y", "0"));
-//	this->list_attr.insert(std::make_pair("agent1", inner));
-//
-//	inner.clear();
-//	inner.insert(std::make_pair("id", "agent2"));
-//	inner.insert(std::make_pair("x", "200"));
-//	inner.insert(std::make_pair("y", "150"));
-//	this->list_attr.insert(std::make_pair("agent2", inner));
-//
-//}
+void Environnement::readDataFromQueueMsg()
+{
+    const std::string mq_name = "/envqueuemsg";
+    const int taille  = 1000;
+    const int max_msg = 5;
 
-//void Environnement::printData() {
-//	std::map<std::string, std::map<std::string, std::string>>::iterator it;
-//	std::map<std::string, std::string>::iterator it2;
-//	for (it = this->list_attr.begin(); it != this->list_attr.end(); it++) {
-//		std::cout << "------" << std::endl;
-//		std::cout << "=>" << it->first << std::endl;
-//		for (it2 = it->second.begin(); it2 != it->second.end(); it2++) {
-//			std::cout << it2->first << " : " << it2->second << std::endl;
-//		}
-//	}
-//}
+    struct mq_attr attr;
+    attr.mq_flags   = 0;
+    attr.mq_maxmsg  = max_msg;
+    attr.mq_msgsize = taille;
+    attr.mq_curmsgs = 0;
 
+    mqd_t mq = mq_open(mq_name.c_str(), O_RDONLY | O_CREAT, 0666, &attr);
+    if (mq == (mqd_t)-1) {
+        perror("mq_open ");
+        std::cout << "Error create Message Queue" << std::endl;
+        return;
+    }
 
+    std::vector<char> buffer(taille);
+    std::map<std::string, std::string> m;
 
-void gagent::Environnement::clear_nsap() {
+    while (true) {
+        int ret = mq_receive(mq, buffer.data(), taille, nullptr);
+        if (ret < 0) {
+            perror("mq_receive ");
+            continue;
+        }
+
+        std::string sbuffer(buffer.data(), ret);
+        if (parseKeyValSeq(sbuffer, m)) {
+            auto it_attr = m.find(this->id);
+            if (it_attr != m.end()) {
+                const std::string& agent_id = it_attr->second;
+                auto it_list = list_attr.find(agent_id);
+                if (it_list != list_attr.end())
+                    it_list->second = m;
+                else
+                    list_attr.insert({agent_id, m});
+            }
+        } else {
+            std::cout << "message non conforme : " << sbuffer << std::endl;
+        }
+    }
 }
 
-int gagent::Environnement::push_nsap() {
-	return 0;
+void Environnement::start(bool gui, unsigned int timer_val)
+{
+    init_env();
+    link_attribut();
+
+#ifdef BUILD_GUI
+    auto* env_gui = new EnvironnementGui();
+    env_gui->setEnvPtr(this);
+    int   argc   = 1;
+    char* argv[] = {const_cast<char*>("")};
+    env_gui->createWindow(argc, argv, gui, timer_val);
+#else
+    (void)gui;
+    (void)timer_val;
+    std::thread(&Environnement::readDataFromQueueMsg, this).detach();
+#endif
 }
 
-int gagent::Environnement::pull_nsap() {
-	return 0;
+void Environnement::clear_nsap() {}
+
+int Environnement::push_nsap() { return 0; }
+
+int Environnement::pull_nsap() { return 0; }
+
+std::map<int, std::string>* Environnement::get_nsaps()
+{
+    return nullptr;
 }
 
-void gagent::Environnement::start(bool gui,unsigned int timer_val) {
+void Environnement::make_agent()
+{
+    for (size_t i = 0; i < list_visual_agents.size(); i++)
+        delete list_visual_agents[i];
+    list_visual_agents.clear();
 
-//	this->initData();
-//	this->printData();
-
-	this->init_env();
-	this->link_attribut();
-
-	gagent::EnvironnementGui* env = new gagent::EnvironnementGui();
-	env->setEnvPtr(this);
-	int argc=1;
-	char* argv[] = {(char*)""};
-	env->createWindow(argc,argv,gui,timer_val);
-
+    for (auto& [agent_id, attrs] : list_attr) {
+        auto* v = new VisualAgent();
+        for (auto& [k, val_str] : attrs) {
+            if      (k == id)     { v->id      = val_str; }
+            else if (k == name)   { v->name    = val_str; }
+            else if (k == pos_x)  { try { v->pos_x  = std::stof(val_str); } catch (...) {} }
+            else if (k == pos_y)  { try { v->pos_y  = std::stof(val_str); } catch (...) {} }
+            else if (k == val)    { v->val     = val_str; }
+            else if (k == shape)  { v->shape   = val_str; }
+            else if (k == color)  { v->color   = val_str; }
+            else if (k == pattern){ v->pattern = val_str; }
+            else if (k == size)   { try { v->size   = std::stof(val_str); } catch (...) {} }
+            else if (k == size_x) { try { v->size_x = std::stof(val_str); } catch (...) {} }
+            else if (k == size_y) { try { v->size_y = std::stof(val_str); } catch (...) {} }
+            else if (k == size_z) { try { v->size_z = std::stof(val_str); } catch (...) {} }
+            else                  { v->vals.push_back(val_str); }
+        }
+        if (v->id.empty()) { delete v; continue; }
+        if (v->shape.empty()) v->shape = "circle";
+        if (v->size  == 0)    v->size  = 5.0f;
+        list_visual_agents.push_back(v);
+    }
 }
 
-std::map<int, std::string> *gagent::Environnement::get_nsaps() {
-	std::map<int, std::string>* m= nullptr;
-	m->insert(std::make_pair(1,"test"));
-	return m;
+int Environnement::sendMsgMonitor(std::string msg)
+{
+    msg = "Environnement -> " + msg;
+    udpMonitor->send(msg.c_str(), BUFLEN);
+    return 0;
 }
 
-void gagent::Environnement::make_agent() {
-
-	std::map<std::string, std::map<std::string, std::string>>::iterator it;
-	std::map<std::string, std::string>::iterator it2;
-
-	for (int i = 0; i < this->list_visual_agents.size(); i++) {
-		delete this->list_visual_agents[i];
-	}
-
-	this->list_visual_agents.clear();
-
-	for (it = this->list_attr.begin(); it != this->list_attr.end(); it++) {
-		gagent::VisualAgent* v_agent = new gagent::VisualAgent();
-		//std::cout << "=> enregistrement : " << it->first << std::endl;
-		for (it2 = it->second.begin(); it2 != it->second.end(); it2++) {
-			//std::cout << "velue : " << it2->first << " : " << it2->second << std::endl;
-			if(it2->first == this->id)			{ v_agent->id		= it2->second ;}
-			else if(it2->first == this->name)	{ v_agent->name		= it2->second ;}
-			else if(it2->first == this->pos_x)	{try{ v_agent->pos_x= std::stof(it2->second);}catch(...){v_agent->pos_x=0;}}
-			else if(it2->first == this->pos_y)	{try{ v_agent->pos_y= std::stof(it2->second);}catch(...){v_agent->pos_y=0;}}
-			else if(it2->first == this->val)	{ v_agent->val		= it2->second ;}
-			else if(it2->first == this->shape)	{ v_agent->shape	= it2->second ;}
-			else if(it2->first == this->color)	{ v_agent->color	= it2->second ;}
-			else if(it2->first == this->pattern){ v_agent->pattern	= it2->second ;}
-			else if(it2->first == this->size)	{try{v_agent->size	= std::stof(it2->second);}catch(...){v_agent->size=0;}}
-			else if(it2->first == this->size_x)	{try{v_agent->size_x= std::stof(it2->second);}catch(...){v_agent->size_x=0;}}
-			else if(it2->first == this->size_y)	{try{v_agent->size_y= std::stof(it2->second);}catch(...){v_agent->size_y=0;}}
-			else if(it2->first == this->size_z)	{try{v_agent->size_z= std::stof(it2->second);}catch(...){v_agent->size_z=0;}}
-			else 								{ v_agent->vals.push_back(it2->second);}
-		}
-
-		if (v_agent->id ==""){
-			delete (v_agent);
-			continue;
-		}
-
-		if (v_agent->shape =="")	{ v_agent->shape = "circle";}
-		if (v_agent->size  == 0) 	{ v_agent->size  = 5.0;}
-
-		this->list_visual_agents.push_back(v_agent);
-
-	}
-
-
-}
-
-int gagent::Environnement::sendMsgMonitor(std::string msg) {
-	msg = "Environnement -> " + msg;
-	this->udpMonitor->send((char*) msg.c_str(), BUFLEN);
-	return 0;
-}
-
-
-} /* namespace gagent */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+} // namespace gagent
