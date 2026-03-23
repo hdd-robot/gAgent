@@ -1,0 +1,11 @@
+_build/
+_doxygen/
+generated/
+*.aux
+*.bbl
+*.blg
+*.toc
+*.out
+*.backup
+*.pdf
+*.kilepr

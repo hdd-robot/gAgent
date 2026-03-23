@@ -1,9 +1,0 @@
-<map id="src_agent/Logger.hpp" name="src_agent/Logger.hpp">
-<area shape="rect" id="Node000001" title="Centralized logging system for gAgent platform." alt="" coords="194,5,354,31"/>
-<area shape="rect" id="Node000002" href="$CommunicationManager_8hpp.html" title="Manages different communication protocols (UDP, CORBA, Message Queues)" alt="" coords="5,79,281,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="242,40,166,81,163,76,239,35"/>
-<area shape="rect" id="Node000004" href="$ErrorHandler_8cpp.html" title="Implementation of error handling utilities." alt="" coords="306,79,503,104"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="309,35,385,76,382,81,306,40"/>
-<area shape="rect" id="Node000003" href="$CommunicationManager_8cpp.html" title="Implementation of communication manager." alt="" coords="6,152,281,177"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="146,118,146,152,141,152,141,118"/>
-</map>

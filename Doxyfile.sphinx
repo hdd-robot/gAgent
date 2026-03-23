@@ -1,0 +1,32 @@
+PROJECT_NAME           = "gAgent"
+PROJECT_NUMBER         = "0.9.0"
+PROJECT_BRIEF          = "FIPA-compliant Multi-Agent Platform for Neuro-Symbolic Planning"
+
+# Sortie XML uniquement (pour Breathe → Sphinx)
+OUTPUT_DIRECTORY       = doc/_doxygen
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+XML_PROGRAMLISTING     = YES
+
+# Sources : headers publics uniquement
+INPUT                  = include/gagent README.md
+FILE_PATTERNS          = *.hpp *.h *.md
+RECURSIVE              = YES
+EXCLUDE                = */build/*
+
+# Extraction
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+
+# Préprocesseur
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+
+# Qualité
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
