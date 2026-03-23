@@ -4,7 +4,7 @@ gagent_py.agent — Classe de base pour les agents Python gAgent
 Protocole stdin/stdout (newline-delimited JSON) :
 
   C++ → Python :
-    {"event":"start"}
+    {"event":"start","system_prompt":"...","model":"gpt-4o-mini","max_tokens":200,"max_history":20}
     {"event":"message","msg":{"performative":"request","sender":"alice","content":"...",...}}
     {"event":"tick"}
     {"event":"stop"}
@@ -46,6 +46,13 @@ class ACLMessage:
 class Agent:
     """
     Classe de base pour un agent Python gAgent.
+
+    Attributs disponibles dans on_start() et les handlers :
+      self.config         — dict de configuration envoyé par le C++
+      self.system_prompt  — prompt système (depuis config ou défaut)
+      self.model          — modèle LLM (depuis config ou défaut)
+      self.max_tokens     — longueur max de réponse
+      self.max_history    — nb max de tours de conversation conservés
 
     Surcharger les méthodes on_start, on_message, on_tick, on_stop.
     Retourner une action (dict) ou None (= noop).
@@ -96,7 +103,7 @@ class Agent:
     # ── À surcharger ─────────────────────────────────────────────────
 
     def on_start(self) -> Optional[dict]:
-        """Appelé une fois au démarrage."""
+        """Appelé une fois au démarrage, après que self.config est disponible."""
         return None
 
     def on_message(self, msg: ACLMessage) -> Optional[dict]:
@@ -114,6 +121,13 @@ class Agent:
 
     def run(self) -> None:
         """Démarre la boucle événementielle (bloquant)."""
+        # Valeurs par défaut (écrasées par la config du start event)
+        self.config        = {}
+        self.system_prompt = ""
+        self.model         = "gpt-4o-mini"
+        self.max_tokens    = 200
+        self.max_history   = 20
+
         for raw_line in sys.stdin:
             line = raw_line.strip()
             if not line:
@@ -121,7 +135,7 @@ class Agent:
 
             try:
                 event = json.loads(line)
-            except json.JSONDecodeError as e:
+            except json.JSONDecodeError:
                 self._respond({"action": "noop"})
                 continue
 
@@ -129,12 +143,20 @@ class Agent:
             action: Optional[dict] = None
 
             if evt == "start":
+                self.config        = event
+                self.system_prompt = event.get("system_prompt", self.system_prompt)
+                self.model         = event.get("model",         self.model)
+                self.max_tokens    = event.get("max_tokens",    self.max_tokens)
+                self.max_history   = event.get("max_history",   self.max_history)
                 action = self.on_start()
+
             elif evt == "message":
                 msg = ACLMessage(event.get("msg", {}))
                 action = self.on_message(msg)
+
             elif evt == "tick":
                 action = self.on_tick()
+
             elif evt == "stop":
                 self.on_stop()
                 break
