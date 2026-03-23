@@ -13,6 +13,7 @@ symboliques (HTN/PDDL) et d'agents neuraux (LLM).
    pages/quickstart
    pages/architecture
    pages/agent_lifecycle
+   pages/platform
    pages/fipa_acl
    pages/behaviours
    pages/messaging
