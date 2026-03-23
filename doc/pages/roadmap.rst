@@ -30,7 +30,7 @@ Phase 3 — Neuro-symbolique 🎯
 - [ ] **Transport gRPC** : remplacer POSIX MQ par un bus gRPC (multi-machine, Python interop)
 - [ ] **Thread-based agents** : option d'agents légers en threads plutôt que ``fork``
 - [ ] **Couche ontologie** : définitions formelles liées aux champs ACL
-- [ ] **Moteur HTN** : planificateur hiérarchique embarqué
+- [ ] **HTN-Planner** : planificateur hiérarchique externe (dépôt séparé) + ``PlannerBehaviour`` générique
 - [ ] **Bridge PDDL** : interface vers fast-downward ou un solver externe
 - [x] **PythonAgent** : ``PythonBehaviour`` — bridge C++ ↔ Python avec historique,
   config depuis C++ (system_prompt, model, max_tokens), détection crash
