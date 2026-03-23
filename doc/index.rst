@@ -20,6 +20,7 @@ symboliques (HTN/PDDL) et d'agents neuraux (LLM).
    pages/python_agent
    pages/behaviours
    pages/messaging
+   pages/logging
    pages/nsap
 
 .. toctree::
