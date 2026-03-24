@@ -170,6 +170,127 @@ Le comportement se termine automatiquement (``done()`` = true) après :
 - avoir envoyé INFORM ou FAILURE suite à un ACCEPT
 - avoir reçu un REJECT_PROPOSAL
 
+Request (FIPA SC00026H)
+-----------------------
+
+Le **Request Protocol** est le protocole FIPA le plus simple : un initiateur
+envoie une demande à un participant qui l'exécute et retourne le résultat.
+
+.. code-block:: text
+
+   Initiateur          Participant
+       │                   │
+       │── REQUEST ────────►│
+       │                   │
+       │◄── AGREE ──────────│  (optionnel — si traitement long)
+       │                   │
+       │◄── INFORM ─────────│  succès
+       │◄── REFUSE ─────────│  refus immédiat
+       │◄── FAILURE ─────────│  échec après AGREE
+       │◄── NOT_UNDERSTOOD ──│
+
+Inclusion
+~~~~~~~~~
+
+.. code-block:: cpp
+
+   #include <gagent/protocols/Request.hpp>
+   using namespace gagent::protocols;
+
+RequestInitiator
+~~~~~~~~~~~~~~~~
+
+.. code-block:: cpp
+
+   class MonRequester : public RequestInitiator {
+   public:
+       MonRequester(Agent* ag, const std::string& my_name,
+                   const std::string& target)
+           : RequestInitiator(
+               ag,
+               my_name,
+               target,
+               "add(3,4)",   // contenu de la requête
+               "math",       // ontologie (optionnel)
+               10000)        // timeout ms (défaut : 10000)
+       {}
+
+       void handleInform(const ACLMessage& msg) override {
+           std::cout << "Résultat : " << msg.getContent() << "\n";
+       }
+
+       void handleRefuse(const ACLMessage& msg) override {
+           std::cout << "Refusé : " << msg.getContent() << "\n";
+       }
+
+       void handleTimeout() override {
+           std::cerr << "Pas de réponse !\n";
+       }
+   };
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Méthode à surcharger
+     - Description
+   * - ``handleInform(msg)``
+     - Requête traitée avec succès.
+   * - ``handleRefuse(msg)``
+     - Participant a refusé.
+   * - ``handleFailure(msg)``
+     - Participant a échoué après avoir accepté.
+   * - ``handleAgree(msg)``
+     - Participant a accepté (traitement long en cours).
+   * - ``handleNotUnderstood(msg)``
+     - Requête non comprise.
+   * - ``handleTimeout()``
+     - Pas de réponse dans le délai imparti.
+
+``done()`` retourne ``true`` dès réception d'une réponse ou timeout.
+
+RequestParticipant
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: cpp
+
+   class MonServeur : public RequestParticipant {
+   public:
+       MonServeur(Agent* ag, const std::string& my_name)
+           : RequestParticipant(ag, my_name, 500) {}  // tick_ms
+
+       ACLMessage handleRequest(const ACLMessage& req) override {
+           // Traiter la requête et retourner INFORM, REFUSE ou FAILURE
+           ACLMessage reply = req.createReply(ACLMessage::Performative::INFORM);
+           reply.setSender(AgentIdentifier{my_name_});
+           reply.setContent("7");
+           return reply;
+       }
+   };
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Méthode à surcharger
+     - Description
+   * - ``handleRequest(req)``
+     - **Obligatoire.** Traite la requête et retourne la réponse (INFORM,
+       REFUSE ou FAILURE). Par défaut retourne INFORM vide.
+
+``done()`` retourne toujours ``false`` — le participant tourne indéfiniment
+et peut traiter plusieurs requêtes successives.
+
+Exemple complet
+~~~~~~~~~~~~~~~
+
+Voir ``tests/test_request.cpp`` — un agent calcule 3+4 à distance.
+
+.. code-block:: bash
+
+   cd build/tests
+   ./test_request
+
 Messagerie ACL — AclMQ
 -----------------------
 
@@ -190,11 +311,11 @@ Les fonctions bas niveau sont disponibles séparément pour un usage direct :
    // Libérer la queue en fin d'agent (dans takeDown())
    acl_unlink("alice");
 
-Exemple complet
----------------
+Exemple complet (Contract Net)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Voir ``tests/test_contract_net.cpp`` pour un exemple complet :
-enchère de livraison avec 3 transporteurs et sélection du moins cher.
+Voir ``tests/test_contract_net.cpp`` — enchère de livraison avec 3
+transporteurs et sélection du moins cher.
 
 .. code-block:: bash
 
