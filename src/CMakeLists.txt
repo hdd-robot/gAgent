@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 
 find_package(Boost COMPONENTS thread system filesystem REQUIRED)
 find_package(Threads REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ZMQ REQUIRED libzmq)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 
@@ -66,5 +68,7 @@ target_include_directories(gagent
 
 target_link_libraries(gagent
     PUBLIC  Boost::system Boost::thread
-    PRIVATE Threads::Threads config++ rt
+    PRIVATE Threads::Threads config++ rt ${ZMQ_LIBRARIES}
 )
+
+target_include_directories(gagent PRIVATE ${ZMQ_INCLUDE_DIRS})

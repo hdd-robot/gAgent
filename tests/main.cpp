@@ -69,7 +69,7 @@ public:
 		this_agent->addAttribut("pattern");
 		this_agent->addAttribut("size_x");
 		this_agent->addAttribut("size_y");
-	    this_agent->addAttribut("size_z");
+    this_agent->addAttribut("size_z");
 
 
 		this_agent->setAttribut("id","agent3");

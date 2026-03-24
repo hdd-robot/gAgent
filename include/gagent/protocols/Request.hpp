@@ -69,6 +69,7 @@ namespace protocols {
 
 using messaging::acl_send;
 using messaging::acl_receive;
+using messaging::acl_bind;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RequestInitiator
@@ -105,6 +106,12 @@ public:
         , timeout_ms_(timeout_ms)
     {
         conv_id_ = "req-" + my_name_ + "-" + std::to_string(::getpid());
+    }
+
+    void onStart() override {
+        // Pré-bind le socket PULL avant d'envoyer la requête,
+        // pour ne pas perdre la réponse si le serveur répond très vite
+        acl_bind(my_name_);
     }
 
     void action() override {

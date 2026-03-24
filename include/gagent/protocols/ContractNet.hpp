@@ -85,6 +85,7 @@ namespace protocols {
 using messaging::acl_send;
 using messaging::acl_receive;
 using messaging::acl_unlink;
+using messaging::acl_bind;
 
 // ── ContractNetInitiator ─────────────────────────────────────────────────────
 
@@ -127,6 +128,10 @@ public:
     virtual void handleRefuse (const ACLMessage& /*msg*/) {}
 
     // ── Behaviour interface ───────────────────────────────────────────────────
+
+    void onStart() override {
+        acl_bind(my_name_);
+    }
 
     void action() override
     {
