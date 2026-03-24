@@ -136,7 +136,7 @@ Voici ce qui se passe exactement quand ``agent.init()`` est appelé :
                ├─ thread : control_Thread()
                │             └─ traite les actions (runingThred on/off)
                ├─ thread : control_message()
-               │             └─ POSIX MQ /{8-char-id}  (contrôle interne)
+               │             └─ POSIX MQ /{8-char-id}   (contrôle lifecycle)
                │
                ├─ AMSClient::registerAgent()      → agentStatus = ACTIVE
                │
@@ -154,7 +154,8 @@ Voici ce qui se passe exactement quand ``agent.init()`` est appelé :
                └─ doDelete()
                      ├─ AMSClient::deregisterAgent()
                      ├─ DFClient::deregisterAgent()
-                     ├─ mq_unlink(/{8-char-id})
+                     ├─ mq_unlink(/{8-char-id})     # ferme la queue de contrôle
+                     ├─ acl_flush()                  # draine les PUSH ZeroMQ (linger)
                      └─ _exit(0)
 
 Suspension et reprise des behaviours
@@ -225,7 +226,7 @@ Pour vérifier l'état de la plateforme en cours d'exécution :
 
    # Résultat exemple :
    # [AMS] registre (2 agents) :
-   #   alice  pid=4521  addr=/acl_alice  état=active
-   #   bob    pid=4522  addr=/acl_bob    état=active
+   #   alice  pid=4521  addr=ipc:///tmp/acl_alice  état=active
+   #   bob    pid=4522  addr=ipc:///tmp/acl_bob    état=active
    # [DF] annuaire (1 service(s)) :
    #   my-planner  type=planning  agent=alice  ontologie=logistics

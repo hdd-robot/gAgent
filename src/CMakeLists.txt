@@ -72,3 +72,40 @@ target_link_libraries(gagent
 )
 
 target_include_directories(gagent PRIVATE ${ZMQ_INCLUDE_DIRS})
+
+# ── Installation ────────────────────────────────────────────────────────────
+include(CMakePackageConfigHelpers)
+
+install(TARGETS gagent
+    EXPORT  gAgentTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/gagent
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(EXPORT gAgentTargets
+    FILE      gAgentTargets.cmake
+    NAMESPACE gAgent::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gAgent
+)
+
+configure_package_config_file(
+    ${CMAKE_SOURCE_DIR}/cmake/gAgentConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/gAgentConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gAgent
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/gAgentConfigVersion.cmake
+    VERSION     ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/gAgentConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/gAgentConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gAgent
+)

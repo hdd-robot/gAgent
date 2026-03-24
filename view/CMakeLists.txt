@@ -12,10 +12,13 @@ target_include_directories(agentview PRIVATE
 
 target_link_libraries(agentview PRIVATE gagent Threads::Threads)
 
-# Symlink agentview → view binary (for PATH convenience)
+# Symlink dans le répertoire de build
 add_custom_command(TARGET agentview POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E create_symlink
         $<TARGET_FILE:agentview>
         ${CMAKE_CURRENT_BINARY_DIR}/view
     COMMENT "Creating symlink: view -> agentview"
 )
+
+# Installation
+install(TARGETS agentview RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

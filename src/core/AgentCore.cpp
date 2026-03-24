@@ -66,7 +66,7 @@ void AgentCore::stopAgentSystem() {
 
 
 void AgentCore::syncAgentSystem() {
-	waitpid(-1, NULL, 0);
+	while (waitpid(-1, NULL, 0) > 0);
 }
 
 void AgentCore::cache_signal_handler(int signal_num) {

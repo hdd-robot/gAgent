@@ -74,13 +74,14 @@ documenté dans la page dédiée :
 Communication inter-agents
 --------------------------
 
-Les agents communiquent via des **queues POSIX MQ** :
+Les agents communiquent via **ZeroMQ PUSH/PULL** :
 
-- Queue interne : ``/{8-char-random-id}`` (contrôle, 100 octets)
-- Queue ACL : ``/acl_{nom}`` (messages FIPA, 1024 octets)
+- Canal de contrôle interne : ``/{8-char-random-id}`` — queue POSIX MQ (signaux de lifecycle)
+- Canal ACL applicatif : ``ipc:///tmp/acl_<nom>`` — socket ZeroMQ PULL/PUSH
 
-Le message est sérialisé au format FIPA ACL s-expression et parsé par le
-parser Flex/Bison intégré.
+Les connexions PUSH sont persistantes (``PushCache``, une par destination)
+pour éviter le problème du *slow joiner* ZeroMQ. Le message est sérialisé
+au format FIPA ACL s-expression et parsé par le parser Flex/Bison intégré.
 
 Parser FIPA ACL
 ---------------

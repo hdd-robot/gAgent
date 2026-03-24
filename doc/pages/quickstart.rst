@@ -7,7 +7,7 @@ Prérequis
 .. code-block:: bash
 
    # Debian/Ubuntu
-   sudo apt install cmake g++ libboost-all-dev libconfig++-dev flex bison
+   sudo apt install cmake g++ libboost-all-dev libconfig++-dev flex bison libzmq3-dev
 
 Compilation
 -----------
@@ -105,13 +105,16 @@ Lancer les tests
 .. code-block:: bash
 
    cd build/tests
-   ./test_gagent         # test de base
-   ./two_agents_acl      # échange FIPA ACL Alice ↔ Bob
-   ./test_acl            # tests unitaires ACLMessage (66 assertions)
+   ./two_agents_acl        # échange FIPA ACL (3 cycles REQUEST/INFORM)
+   ./test_acl              # tests unitaires ACLMessage (66 assertions)
+   ./test_request          # protocole FIPA Request (16 assertions)
+   ./test_contract_net     # protocole Contract Net (9 assertions)
+   ./test_subscribe_notify # protocole Subscribe-Notify (9 assertions)
+   ./test_concurrent_send  # thread-safety PushCache (3 assertions)
 
    # Tests d'intégration plateforme (agentplatform doit tourner)
    ../platform/agentplatform &
-   ./test_platform       # AMS + DF (24 assertions)
+   ./test_platform         # AMS + DF (24 assertions)
    kill %1
 
 Visualisation web

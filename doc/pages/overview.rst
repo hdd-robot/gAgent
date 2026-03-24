@@ -30,7 +30,8 @@ Architecture technique
 ----------------------
 
 Chaque agent tourne dans son **propre processus** (``fork()``). La communication
-inter-agent se fait via des queues POSIX MQ identifiées par nom d'agent.
+inter-agent se fait via **ZeroMQ PUSH/PULL** : chaque agent possède un socket
+PULL lié à ``ipc:///tmp/acl_<nom>`` (ou ``tcp://…`` pour le multi-machine).
 
 Modules
 -------
