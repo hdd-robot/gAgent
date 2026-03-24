@@ -36,5 +36,6 @@ Phase 3 — Neuro-symbolique 🎯
   config depuis C++ (system_prompt, model, max_tokens), détection crash
 - [x] **Contract Net** (FIPA SC00029H) : ``ContractNetInitiator`` / ``ContractNetParticipant``
 - [x] **Subscribe-Notify** (FIPA SC00035H) : ``SubscribeInitiator`` / ``SubscribeParticipant``
+- [x] **Request** (FIPA SC00026H) : ``RequestInitiator`` / ``RequestParticipant``
 - [ ] **Autres protocoles FIPA** : Iterated Contract Net, Dutch Auction, etc.
 - [x] **Logging structuré** : JSON Lines (``GAGENT_LOG``), events ``agent_start/stop/lifecycle``, ``acl_send/recv``
