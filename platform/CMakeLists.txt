@@ -21,7 +21,7 @@ target_link_libraries(gAgentPlatform
     config++
 )
 
-# Symlinks : un seul binaire, trois noms
+# Symlinks dans le répertoire de build
 add_custom_command(TARGET gAgentPlatform POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E create_symlink
         $<TARGET_FILE:gAgentPlatform>
@@ -34,3 +34,14 @@ add_custom_command(TARGET gAgentPlatform POST_BUILD
         $<TARGET_FILE_DIR:gAgentPlatform>/agentmonitor
     COMMENT "Création des symlinks agentplatform / agentmanager / agentmonitor"
 )
+
+# Installation
+install(TARGETS gAgentPlatform RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(CODE "
+    file(CREATE_LINK gAgentPlatform
+        \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/agentplatform\" SYMBOLIC)
+    file(CREATE_LINK gAgentPlatform
+        \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/agentmanager\"  SYMBOLIC)
+    file(CREATE_LINK gAgentPlatform
+        \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/agentmonitor\"  SYMBOLIC)
+")

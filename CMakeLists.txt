@@ -4,6 +4,13 @@ project(gAgent VERSION 0.9.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Par défaut, "cmake --install build/" installe dans dist/ à la racine du projet
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/dist" CACHE PATH "Install prefix" FORCE)
+endif()
+
+include(GNUInstallDirs)
+
 option(BUILD_TESTS    "Build test suite"             ON)
 option(BUILD_EXAMPLES "Build examples"               ON)
 option(BUILD_PLATFORM "Build platform daemon"        ON)
@@ -28,3 +35,8 @@ endif()
 if(BUILD_VIEW)
     add_subdirectory(view)
 endif()
+
+# Copie le template de démarrage dans dist/src/
+install(DIRECTORY template/
+    DESTINATION src
+)
