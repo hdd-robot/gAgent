@@ -9,16 +9,7 @@ symboliques (HTN/PDDL) et d'agents neuraux (LLM).
    :maxdepth: 2
    :caption: Tutoriels
 
-   tutorials/introduction
-   tutorials/premiers_pas
-   tutorials/structure_main
-   tutorials/behaviours
-   tutorials/fipa_acl
-   tutorials/envoi_reception
-   tutorials/protocoles
-   tutorials/request
-   tutorials/contract_net
-   tutorials/subscribe_notify
+   tutorials/index
 
 .. toctree::
    :maxdepth: 2
