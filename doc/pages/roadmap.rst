@@ -27,7 +27,7 @@ Phase 2 — Infrastructure FIPA ✅
 Phase 3 — Neuro-symbolique 🎯
 ------------------------------
 
-- [ ] **Transport ZeroMQ** : remplacer POSIX MQ par ZeroMQ (multi-machine, migration d'agents, Python interop via pyzmq)
+- [x] **Transport ZeroMQ** : PUSH/PULL sur ``ipc:///tmp/acl_<nom>`` (local) ou ``GAGENT_ENDPOINT_<NOM>=tcp://…`` (réseau), ``PullCache`` + ``PushCache`` (connexions persistantes)
 - [ ] **Thread-based agents** : option d'agents légers en threads plutôt que ``fork``
 - [ ] **Couche ontologie** : définitions formelles liées aux champs ACL
 - [ ] **HTN-Planner** : planificateur hiérarchique externe (dépôt séparé) + ``PlannerBehaviour`` générique

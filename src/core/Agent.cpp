@@ -2,6 +2,7 @@
 #include <gagent/platform/AMSClient.hpp>
 #include <gagent/platform/DFClient.hpp>
 #include <gagent/utils/Logger.hpp>
+#include <gagent/messaging/AclMQ.hpp>
 #include <sys/wait.h>  // For waitpid()
 #include <unistd.h>    // For usleep()
 
@@ -380,7 +381,11 @@ int Agent::doAction(const int act) {
 				mq_unlink(mq_name.c_str());
 			}
 
-			_exit(0);  // sortie immédiate du processus child
+			// Flush les sockets PUSH avant _exit pour que le linger ZMQ
+			// puisse livrer les derniers messages (sinon _exit ferme les fd
+			// sans attendre le linger).
+			gagent::messaging::acl_flush();
+			_exit(0);  // sortie propre du processus child
 		} else {
 			// Demande externe : envoie le signal au child
 			sigqueue(chldpid, SIG_AGENT_DELETE, sval);

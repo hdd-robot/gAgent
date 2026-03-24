@@ -76,6 +76,7 @@ namespace protocols {
 using messaging::acl_send;
 using messaging::acl_receive;
 using messaging::acl_unlink;
+using messaging::acl_bind;
 
 // ── SubscribeInitiator ────────────────────────────────────────────────────────
 
@@ -118,6 +119,10 @@ public:
     virtual bool shouldCancel() { return false; }
 
     // ── Behaviour interface ───────────────────────────────────────────────────
+
+    void onStart() override {
+        acl_bind(my_name_);
+    }
 
     void action() override
     {
