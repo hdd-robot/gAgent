@@ -170,6 +170,157 @@ Le comportement se termine automatiquement (``done()`` = true) après :
 - avoir envoyé INFORM ou FAILURE suite à un ACCEPT
 - avoir reçu un REJECT_PROPOSAL
 
+Subscribe-Notify (FIPA SC00035H)
+---------------------------------
+
+Le **Subscribe-Notify Protocol** permet à un agent (subscriber) de s'abonner
+aux notifications d'un agent publisher. Le publisher envoie des ``INFORM`` à
+chaque changement d'état à tous ses subscribers actifs.
+
+.. code-block:: text
+
+   Subscriber          Publisher
+       │                   │
+       │── SUBSCRIBE ──────►│   "notifie-moi quand X change"
+       │                   │
+       │◄── AGREE ──────────│   accepté
+       │   (ou REFUSE)      │   refusé → done
+       │                   │
+       │             [événement]
+       │◄── INFORM ─────────│   notification (répétée)
+       │◄── INFORM ─────────│
+       │                   │
+       │── CANCEL ──────────►│   se désabonner (optionnel)
+       │◄── INFORM ─────────│   confirmation finale (optionnel)
+
+Inclusion
+~~~~~~~~~
+
+.. code-block:: cpp
+
+   #include <gagent/protocols/SubscribeNotify.hpp>
+   using namespace gagent::protocols;
+
+SubscribeInitiator
+~~~~~~~~~~~~~~~~~~
+
+.. code-block:: cpp
+
+   class MonSubscriber : public SubscribeInitiator {
+   public:
+       MonSubscriber(Agent* ag, const std::string& my_name,
+                    const std::string& publisher)
+           : SubscribeInitiator(
+               ag,
+               my_name,
+               publisher,
+               "temperature",  // topic / contenu du SUBSCRIBE
+               "sensors",      // ontologie (optionnel)
+               5000)           // timeout AGREE ms (défaut : 5000)
+       {}
+
+       void handleNotify(const ACLMessage& msg) override {
+           std::cout << "Notification : " << msg.getContent() << "\n";
+       }
+
+       void handleRefuse(const ACLMessage& msg) override {
+           std::cout << "Refusé : " << msg.getContent() << "\n";
+       }
+
+       // Retourner true pour envoyer CANCEL et se désabonner
+       bool shouldCancel() override {
+           return notifications_reçues_ >= 10;
+       }
+   };
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Méthode à surcharger
+     - Description
+   * - ``handleNotify(msg)``
+     - Appelé à chaque ``INFORM`` reçu du publisher (y compris le dernier
+       après CANCEL).
+   * - ``handleRefuse(msg)``
+     - Publisher a refusé l'abonnement.
+   * - ``shouldCancel()``
+     - Appelé à chaque tick. Retourner ``true`` pour envoyer ``CANCEL``
+       et terminer.
+
+``done()`` retourne ``true`` après réception de ``REFUSE`` ou après
+traitement du ``CANCEL``.
+
+SubscribeParticipant
+~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: cpp
+
+   class MonPublisher : public SubscribeParticipant {
+       int tick_ = 0;
+   public:
+       MonPublisher(Agent* ag, const std::string& my_name)
+           : SubscribeParticipant(ag, my_name, 200) {}  // poll_ms
+
+       bool handleSubscribe(const ACLMessage& sub) override {
+           // Accepter ou refuser l'abonnement
+           return true;
+       }
+
+       std::string handleCancel(const std::string& subscriber) override {
+           // Retourner le contenu du dernier INFORM (vide = aucun)
+           return "fin-abonnement";
+       }
+
+       void action() override {
+           SubscribeParticipant::action();  // gère SUBSCRIBE / CANCEL entrants
+
+           // Publier périodiquement
+           if (++tick_ % 10 == 0) {
+               notify(std::to_string(temperature_));
+           }
+       }
+   };
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Méthode à surcharger
+     - Description
+   * - ``handleSubscribe(msg)``
+     - Retourner ``true`` pour accepter (``AGREE``), ``false`` pour refuser
+       (``REFUSE``). Par défaut accepte tout.
+   * - ``handleCancel(subscriber)``
+     - Appelé quand un subscriber se désabonne. Retourner le contenu du
+       dernier ``INFORM`` à envoyer (vide = aucun).
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Méthode publique
+     - Description
+   * - ``notify(content, ontology="")``
+     - Envoie un ``INFORM`` à **tous** les subscribers actifs.
+   * - ``notifyOne(subscriber, content, ontology="")``
+     - Envoie un ``INFORM`` à **un seul** subscriber.
+   * - ``subscriberCount()``
+     - Retourne le nombre de subscribers actifs.
+
+``done()`` retourne toujours ``false`` — le publisher tourne indéfiniment.
+
+Exemple complet (Subscribe-Notify)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Voir ``tests/test_subscribe_notify.cpp`` — capteur de température : le
+publisher émet toutes les 200 ms, le subscriber annule après 3 notifications.
+
+.. code-block:: bash
+
+   cd build/tests
+   ./test_subscribe_notify
+
 Request (FIPA SC00026H)
 -----------------------
 
