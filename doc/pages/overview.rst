@@ -1,8 +1,9 @@
 Vue d'ensemble
 ==============
 
-gAgent est une plateforme multi-agent C++17 basée sur le standard **FIPA ACL**
-(Foundation for Intelligent Physical Agents — Agent Communication Language).
+**gAgent** (*generative Agent*) est une plateforme multi-agent C++17 basée sur
+le standard **FIPA ACL** (Foundation for Intelligent Physical Agents — Agent
+Communication Language).
 
 Objectif
 --------
