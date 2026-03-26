@@ -3,6 +3,9 @@
 
 #include <signal.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <iostream>
 #include <iomanip>
@@ -45,15 +48,18 @@ void Manager::print_agents(const std::vector<AgentInfo>& agents)
               << std::left
               << std::setw(20) << "NOM"
               << std::setw(8)  << "PID"
-              << std::setw(18) << "ADRESSE MQ"
+              << std::setw(30) << "ENDPOINT ZMQ"
+              << std::setw(12) << "SLAVE"
               << "ÉTAT"
               << RESET << "\n";
-    std::cout << std::string(58, '-') << "\n";
+    std::cout << std::string(74, '-') << "\n";
     for (auto& a : agents) {
+        std::string slave = a.slave_ip.empty() ? "local" : a.slave_ip;
         std::cout << std::left
                   << std::setw(20) << a.name
                   << std::setw(8)  << a.pid
-                  << std::setw(18) << a.address
+                  << std::setw(30) << a.address
+                  << std::setw(12) << slave
                   << state_color(a.state) << a.state << RESET
                   << "\n";
     }
@@ -156,6 +162,47 @@ void Manager::cmd_watch(int interval_ms)
     }
 }
 
+static std::string ctrl_readline(int fd)
+{
+    std::string line;
+    char c;
+    while (::read(fd, &c, 1) == 1) {
+        if (c == '\n') break;
+        line += c;
+    }
+    return line;
+}
+
+/* Envoie une commande de contrôle à un esclave distant (KILL/SUSPEND/WAKE). */
+static bool send_remote_signal(const std::string& slave_ip, int control_port,
+                                int pid, const std::string& cmd_name)
+{
+    int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) return false;
+
+    struct sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port   = htons(static_cast<uint16_t>(control_port));
+    if (::inet_pton(AF_INET, slave_ip.c_str(), &addr.sin_addr) <= 0) {
+        ::close(fd); return false;
+    }
+
+    struct timeval tv { 3, 0 };
+    ::setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+
+    if (::connect(fd, reinterpret_cast<struct sockaddr*>(&addr),
+                  sizeof(addr)) < 0) {
+        ::close(fd); return false;
+    }
+
+    std::string msg = cmd_name + " " + std::to_string(pid) + "\n";
+    ::write(fd, msg.c_str(), msg.size());
+    std::string resp = ctrl_readline(fd);
+    ::close(fd);
+    return resp.substr(0, 2) == "OK";
+}
+
 bool Manager::send_signal(const std::string& name, int sig)
 {
     AMSClient ams;
@@ -164,6 +211,31 @@ bool Manager::send_signal(const std::string& name, int sig)
         std::cerr << "[manager] agent inconnu : " << name << "\n";
         return false;
     }
+
+    // Agent distant ?
+    if (!info->slave_ip.empty()) {
+        // Trouver le port de contrôle de cet esclave
+        auto slaves = ams.listSlaves();
+        int ctrl_port = 40015;
+        for (auto& [ip, port] : slaves)
+            if (ip == info->slave_ip) { ctrl_port = port; break; }
+
+        std::string cmd_name;
+        if      (sig == SIG_AGENT_DELETE)  cmd_name = "KILL";
+        else if (sig == SIG_AGENT_SUSPEND) cmd_name = "SUSPEND";
+        else if (sig == SIG_AGENT_WAKE)    cmd_name = "WAKE";
+        else { std::cerr << "[manager] signal inconnu\n"; return false; }
+
+        if (!send_remote_signal(info->slave_ip, ctrl_port,
+                                info->pid, cmd_name)) {
+            std::cerr << "[manager] impossible de joindre le serveur de contrôle "
+                      << info->slave_ip << ":" << ctrl_port << "\n";
+            return false;
+        }
+        return true;
+    }
+
+    // Agent local
     union sigval sval;
     sval.sival_int = 0;
     if (sigqueue(info->pid, sig, sval) < 0) {

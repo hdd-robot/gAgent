@@ -1,14 +1,14 @@
 /*
  * AclMQ.hpp — Transport ZeroMQ pour la messagerie FIPA ACL
  *
- * Chaque agent dispose d'un socket PULL dédié.
- * Transport local  : ipc:///tmp/acl_<nom>
- * Transport réseau : variable d'environnement GAGENT_ENDPOINT_<NOM>=tcp://host:port
+ * Mode local  : ipc:///tmp/acl_<nom>
+ * Mode cluster: tcp://<slave_ip>:<port> (port dérivé du nom de l'agent)
  *
- * Usage (API inchangée) :
+ * Usage :
  *   #include <gagent/messaging/AclMQ.hpp>
  *   using namespace gagent::messaging;
  *
+ *   std::string ep = acl_bind("alice");   // retourne l'endpoint à passer à l'AMS
  *   acl_send("bob", msg);
  *   auto opt = acl_receive("alice", 5000);
  */
@@ -17,12 +17,15 @@
 #define GAGENT_ACLMQ_HPP_
 
 #include <gagent/messaging/ACLMessage.hpp>
+#include <gagent/platform/PlatformConfig.hpp>
+#include <gagent/platform/AMSClient.hpp>
 #include <gagent/utils/Logger.hpp>
 #include <zmq.h>
 #include <optional>
 #include <string>
 #include <map>
 #include <mutex>
+#include <functional>
 #include <cstdlib>
 #include <cctype>
 #include <unistd.h>
@@ -30,18 +33,18 @@
 namespace gagent {
 namespace messaging {
 
-// ── Endpoint ──────────────────────────────────────────────────────────────────
+// ── Endpoint local (IPC) ──────────────────────────────────────────────────────
 
 /**
- * Retourne l'endpoint ZMQ pour un agent donné.
+ * Retourne l'endpoint IPC local pour un agent.
+ * En mode cluster, l'endpoint réel est négocié par acl_bind().
  *
  * Priorité :
- *   1. Variable d'environnement GAGENT_ENDPOINT_<NOM> (ex: tcp://192.168.1.10:5555)
+ *   1. Variable d'environnement GAGENT_ENDPOINT_<NOM>
  *   2. IPC local : ipc:///tmp/acl_<nom>
  */
-inline std::string acl_endpoint(const std::string& name)
+inline std::string acl_endpoint_ipc(const std::string& name)
 {
-    // Construire le nom de la variable : GAGENT_ENDPOINT_<NOM_EN_MAJUSCULES>
     std::string var = "GAGENT_ENDPOINT_";
     for (char c : name) var += static_cast<char>(std::toupper(c));
     const char* ep = std::getenv(var.c_str());
@@ -58,7 +61,6 @@ inline void* zmq_ctx()
 
     pid_t cur = ::getpid();
     if (ctx_pid != cur) {
-        // Première utilisation dans ce processus (ou après fork)
         if (ctx) zmq_ctx_destroy(ctx);
         ctx     = zmq_ctx_new();
         ctx_pid = cur;
@@ -66,7 +68,7 @@ inline void* zmq_ctx()
     return ctx;
 }
 
-// ── Cache des sockets PULL (un par nom d'agent par processus) ─────────────────
+// ── Cache des sockets PULL ────────────────────────────────────────────────────
 
 class PullCache {
 public:
@@ -76,22 +78,25 @@ public:
     }
 
     /**
-     * Retourne le socket PULL pour cet agent, en le créant et le bindant
-     * à son endpoint si c'est la première fois.
+     * Retourne le socket PULL pour cet agent (crée + bind si 1ère fois).
+     * @param[out] out_endpoint  Endpoint public (pour enregistrement AMS)
      */
-    void* get(const std::string& name) {
+    void* get(const std::string& name, std::string* out_endpoint = nullptr) {
         std::lock_guard<std::mutex> lock(mtx_);
 
-        // Invalider le cache si on est dans un nouveau processus (après fork)
         pid_t cur = ::getpid();
         if (pid_ != cur) {
             for (auto& [n, s] : sockets_) zmq_close(s);
             sockets_.clear();
+            endpoints_.clear();
             pid_ = cur;
         }
 
         auto it = sockets_.find(name);
-        if (it != sockets_.end()) return it->second;
+        if (it != sockets_.end()) {
+            if (out_endpoint) *out_endpoint = endpoints_[name];
+            return it->second;
+        }
 
         void* sock = zmq_socket(zmq_ctx(), ZMQ_PULL);
         if (!sock) return nullptr;
@@ -99,23 +104,48 @@ public:
         int linger = 0;
         zmq_setsockopt(sock, ZMQ_LINGER, &linger, sizeof(linger));
 
-        std::string ep = acl_endpoint(name);
+        auto& cfg = gagent::platform::PlatformConfig::instance();
+        std::string ep;
 
-        // Supprimer le fichier socket IPC résiduel d'un run précédent
-        if (ep.rfind("ipc://", 0) == 0) {
-            ::unlink(ep.substr(6).c_str());
+        if (cfg.isCluster()) {
+            // Mode cluster : bind TCP
+            int base_port = cfg.basePort();
+            uint16_t h    = static_cast<uint16_t>(
+                                std::hash<std::string>{}(name) % 15000);
+            bool bound = false;
+            for (int attempt = 0; attempt < 100; ++attempt) {
+                uint16_t port = static_cast<uint16_t>(base_port) + h
+                                + static_cast<uint16_t>(attempt);
+                std::string bind_ep = "tcp://*:" + std::to_string(port);
+                if (zmq_bind(sock, bind_ep.c_str()) == 0) {
+                    ep    = "tcp://" + cfg.slaveIP() + ":"
+                          + std::to_string(port);
+                    bound = true;
+                    break;
+                }
+            }
+            if (!bound) {
+                zmq_close(sock);
+                return nullptr;
+            }
+        } else {
+            // Mode local : bind IPC
+            ep = acl_endpoint_ipc(name);
+            if (ep.rfind("ipc://", 0) == 0)
+                ::unlink(ep.substr(6).c_str());
+            if (zmq_bind(sock, ep.c_str()) != 0) {
+                zmq_close(sock);
+                return nullptr;
+            }
         }
 
-        if (zmq_bind(sock, ep.c_str()) != 0) {
-            zmq_close(sock);
-            return nullptr;
-        }
-
-        sockets_[name] = sock;
+        sockets_[name]   = sock;
+        endpoints_[name] = ep;
+        if (out_endpoint) *out_endpoint = ep;
         return sock;
     }
 
-    /** Ferme le socket et nettoie le fichier IPC. */
+    /** Ferme le socket et nettoie le fichier IPC si applicable. */
     void remove(const std::string& name) {
         std::lock_guard<std::mutex> lock(mtx_);
         auto it = sockets_.find(name);
@@ -123,11 +153,11 @@ public:
         zmq_close(it->second);
         sockets_.erase(it);
 
-        // Supprimer le fichier socket IPC si c'est un endpoint local
-        std::string ep = acl_endpoint(name);
-        if (ep.rfind("ipc://", 0) == 0) {
-            std::string path = ep.substr(6); // retirer "ipc://"
-            ::unlink(path.c_str());
+        auto eit = endpoints_.find(name);
+        if (eit != endpoints_.end()) {
+            if (eit->second.rfind("ipc://", 0) == 0)
+                ::unlink(eit->second.substr(6).c_str());
+            endpoints_.erase(eit);
         }
     }
 
@@ -135,13 +165,12 @@ private:
     PullCache() : pid_(::getpid()) {}
 
     std::mutex mtx_;
-    std::map<std::string, void*> sockets_;
+    std::map<std::string, void*>       sockets_;
+    std::map<std::string, std::string> endpoints_;
     pid_t pid_;
 };
 
-// ── Cache des sockets PUSH (un par destination par processus) ─────────────────
-//
-// Évite le "slow joiner" : la connexion est établie une seule fois et réutilisée.
+// ── Cache des sockets PUSH ────────────────────────────────────────────────────
 
 class PushCache {
 public:
@@ -150,26 +179,13 @@ public:
         return inst;
     }
 
-    /**
-     * Envoie <data> vers <to> de façon thread-safe.
-     *
-     * Le mutex est tenu pendant toute l'opération (connexion + zmq_send)
-     * afin qu'un seul thread à la fois utilise chaque socket ZMQ
-     * (les sockets ZMQ ne sont pas thread-safe).
-     *
-     * @return true si l'envoi a réussi
-     */
     bool send(const std::string& to, const char* data, size_t len) {
         std::lock_guard<std::mutex> lock(mtx_);
-
         void* sock = getOrCreate(to);
         if (!sock) return false;
-
         return zmq_send(sock, data, len, 0) >= 0;
     }
 
-    /** Ferme tous les sockets PUSH en respectant le linger.
-     *  À appeler avant _exit() pour garantir la livraison des derniers messages. */
     void flush() {
         std::lock_guard<std::mutex> lock(mtx_);
         for (auto& [n, s] : sockets_) zmq_close(s);
@@ -179,7 +195,6 @@ public:
 private:
     PushCache() : pid_(::getpid()) {}
 
-    /** Doit être appelé avec mtx_ déjà verrouillé. */
     void* getOrCreate(const std::string& to) {
         pid_t cur = ::getpid();
         if (pid_ != cur) {
@@ -191,6 +206,22 @@ private:
         auto it = sockets_.find(to);
         if (it != sockets_.end()) return it->second;
 
+        // Résoudre l'endpoint
+        std::string ep;
+        auto& cfg = gagent::platform::PlatformConfig::instance();
+
+        if (cfg.isCluster()) {
+            // Interroger l'AMS pour obtenir l'endpoint de l'agent cible
+            gagent::platform::AMSClient ams;
+            auto info = ams.lookup(to);
+            if (info && !info->address.empty())
+                ep = info->address;
+            else
+                ep = acl_endpoint_ipc(to);   // fallback IPC (agent local)
+        } else {
+            ep = acl_endpoint_ipc(to);
+        }
+
         void* sock = zmq_socket(zmq_ctx(), ZMQ_PUSH);
         if (!sock) return nullptr;
 
@@ -200,15 +231,13 @@ private:
         int sndtmo = 2000;
         zmq_setsockopt(sock, ZMQ_SNDTIMEO, &sndtmo, sizeof(sndtmo));
 
-        std::string ep = acl_endpoint(to);
         if (zmq_connect(sock, ep.c_str()) != 0) {
             zmq_close(sock);
             return nullptr;
         }
 
-        // Slow-joiner workaround : laisser la connexion IPC s'établir
-        // avant le premier envoi (ZMQ connecte en arrière-plan).
-        usleep(1000); // 1 ms
+        // Slow-joiner : laisser la connexion s'établir
+        usleep(1000);
 
         sockets_[to] = sock;
         return sock;
@@ -222,19 +251,31 @@ private:
 // ── API publique ──────────────────────────────────────────────────────────────
 
 /**
- * Pré-bind le socket PULL pour <name> sans attendre de message.
- * À appeler dans onStart() pour garantir que le socket est prêt
- * avant d'envoyer un premier message qui pourrait générer une réponse.
+ * Pré-bind le socket PULL pour <name> et enregistre l'endpoint dans l'AMS.
+ *
+ * En mode local : endpoint = "ipc:///tmp/acl_<name>"
+ * En mode cluster : endpoint = "tcp://<slave_ip>:<port>"
+ *
+ * L'appel AMS est un upsert (REGISTER_ENDPOINT) : il crée ou met à jour
+ * l'entrée pour ce nom visible, ce qui permet à acl_send() de résoudre
+ * l'endpoint même si le nom ne correspond pas au nom interne de l'agent.
+ *
+ * Peut être appelé plusieurs fois avec le même nom : no-op après le 1er appel.
  */
-inline void acl_bind(const std::string& name)
+inline std::string acl_bind(const std::string& name)
 {
-    PullCache::instance().get(name);
+    std::string ep;
+    void* sock = PullCache::instance().get(name, &ep);
+    if (sock && !ep.empty()) {
+        // Enregistrer/mettre à jour dans l'AMS pour le routage en cluster
+        gagent::platform::AMSClient ams;
+        ams.registerEndpoint(name, ::getpid(), ep);
+    }
+    return ep;
 }
 
 /**
  * Envoie un ACLMessage à l'agent <to>.
- * Utilise un socket PUSH persistant (PushCache) pour éviter le "slow joiner".
- * @return true si l'envoi a réussi
  */
 inline bool acl_send(const std::string& to, const ACLMessage& msg)
 {
@@ -257,8 +298,6 @@ inline bool acl_send(const std::string& to, const ACLMessage& msg)
 
 /**
  * Reçoit un ACLMessage depuis la queue de <my_name>.
- * Bloquant jusqu'à timeout_ms.
- * @return nullopt si timeout ou erreur
  */
 inline std::optional<ACLMessage> acl_receive(const std::string& my_name,
                                               int timeout_ms = 5000)
@@ -296,18 +335,20 @@ inline std::optional<ACLMessage> acl_receive(const std::string& my_name,
 }
 
 /**
- * Libère le socket de <name> et supprime le fichier IPC.
+ * Libère le socket de <name>, supprime le fichier IPC si applicable,
+ * et désenregistre le nom de routage dans l'AMS.
  * À appeler dans takeDown() de l'agent.
  */
 inline void acl_unlink(const std::string& name)
 {
     PullCache::instance().remove(name);
+    // Supprimer l'entrée de routage dans l'AMS pour éviter les entrées fantômes
+    gagent::platform::AMSClient ams;
+    ams.deregisterAgent(name);
 }
 
 /**
  * Ferme tous les sockets PUSH en respectant le linger ZMQ.
- * À appeler juste avant _exit() pour garantir la livraison des messages en attente.
- * Sans cela, _exit() ferme les descripteurs brutalement, court-circuitant le linger.
  */
 inline void acl_flush()
 {

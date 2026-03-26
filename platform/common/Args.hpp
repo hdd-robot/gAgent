@@ -17,12 +17,20 @@ public:
     static int argsUsageAgentPlatform(int argc, char** argv, Args*);
     static int argsUsageAgentMonitor (int argc, char** argv, Args*);
 
-    const std::string& getIpAdrMng() const { return ipAdrMng_; }
-    const std::string& getPortMng()  const { return portMng_;  }
-    const std::string& getIpAdrPlt() const { return ipAdrPlt_; }
-    const std::string& getPortPlt()  const { return portPlt_;  }
-    const std::string& getIpAdrMon() const { return ipAdrMon_; }
-    const std::string& getPortMon()  const { return portMon_;  }
+    const std::string& getIpAdrMng()     const { return ipAdrMng_; }
+    const std::string& getPortMng()      const { return portMng_;  }
+    const std::string& getIpAdrPlt()     const { return ipAdrPlt_; }
+    const std::string& getPortPlt()      const { return portPlt_;  }
+    const std::string& getIpAdrMon()     const { return ipAdrMon_; }
+    const std::string& getPortMon()      const { return portMon_;  }
+
+    // Multi-machine
+    bool               isMaster()        const { return master_; }
+    bool               isSlave()         const { return !slave_addr_.empty(); }
+    const std::string& slaveAddr()       const { return slave_addr_; }  // "ip:port"
+    const std::string& localIP()         const { return local_ip_; }    // --ip override
+    int                controlPort()     const { return control_port_; }
+    int                basePort()        const { return base_port_; }
 
     void setIpAdrMng(const std::string& v) { ipAdrMng_ = v; }
     void setPortMng (const std::string& v) { portMng_  = v; }
@@ -42,6 +50,12 @@ private:
     std::string portMng_  = "40012";
     std::string ipAdrMon_ = "127.0.0.1";
     std::string portMon_  = "40013";
+
+    bool        master_       = false;
+    std::string slave_addr_;      // ex: "192.168.1.10:40011"
+    std::string local_ip_;        // override via --ip
+    int         control_port_ = 40015;
+    int         base_port_    = 50000;
 };
 
 #endif /* GAGENT_PLATFORM_ARGS_HPP_ */

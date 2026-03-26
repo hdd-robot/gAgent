@@ -15,9 +15,10 @@ namespace platform {
 
 struct AgentRecord {
     std::string name;       // nom unique de l'agent
-    std::string address;    // adresse MQ : /{8-char-id}
+    std::string address;    // endpoint ZMQ : ipc:///tmp/acl_<name> ou tcp://ip:port
     int         pid = -1;   // PID du processus child
     std::string state;      // active | suspended | waiting | deleted
+    std::string slave_ip;   // IP de la plateforme esclave (vide = local)
 };
 
 } // namespace platform

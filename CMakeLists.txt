@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
 project(gAgent VERSION 0.9.0 LANGUAGES CXX)
 
+# Supprimer le warning sur le module FindBoost obsolète (Boost >= 1.82 fournit son propre config)
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -39,4 +44,10 @@ endif()
 # Copie le template de démarrage dans dist/src/
 install(DIRECTORY template/
     DESTINATION src
+)
+
+# README à la racine de dist/
+install(FILES dist-README.md
+    DESTINATION .
+    RENAME README.md
 )

@@ -33,16 +33,22 @@ public:
     std::vector<Service> search(const std::string& type,
                                 const std::string& ontology) const;
 
+    // Retire tous les services des agents d'un esclave
+    void deregisterSlave(const std::string& slave_ip);
+
     void dump() const;
 
     // Démarre le serveur socket Unix (boucle bloquante — à lancer dans un thread)
     void serve(const std::string& socket_path);
 
+    // Démarre le serveur TCP (boucle bloquante — à lancer dans un thread)
+    void serve_tcp(int port);
+
 private:
     mutable std::mutex mutex_;
     std::vector<Service> services_;
 
-    void handle_client(int fd);
+    void handle_client(int fd, const std::string& peer_ip = "");
 };
 
 } // namespace platform

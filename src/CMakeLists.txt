@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.15)
-
 find_package(Boost COMPONENTS thread system filesystem REQUIRED)
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
@@ -40,6 +38,7 @@ set(SRCS
     utils/udp_client_server.cpp
     platform/AMSClient.cpp
     platform/DFClient.cpp
+    platform/PlatformConfig.cpp
     platform/EnvClient.cpp
     python/PythonBehaviour.cpp
     ${BISON_FipaAclParser_OUTPUTS}

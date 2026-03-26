@@ -23,6 +23,7 @@ struct Service {
     std::string interactionProtocol;  // protocole (ex: "fipa-request")
     std::string ownership;            // propriétaire
     pid_t       pid = 0;              // PID de l'agent (pour détection de mort)
+    std::string slave_ip;             // IP de la plateforme esclave (vide = local)
 };
 
 } // namespace platform

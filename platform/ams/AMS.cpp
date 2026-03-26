@@ -1,7 +1,10 @@
 #include "AMS.hpp"
+#include "../SlaveRegistry.hpp"
 
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include <signal.h>
 #include <cerrno>
@@ -14,7 +17,7 @@ namespace gagent {
 namespace platform {
 
 /* ------------------------------------------------------------------ */
-/* Serveur socket Unix                                                  */
+/* Utilitaires                                                          */
 /* ------------------------------------------------------------------ */
 
 static std::string readline_fd(int fd)
@@ -33,7 +36,11 @@ static void write_str(int fd, const std::string& s)
     ::write(fd, s.c_str(), s.size());
 }
 
-void AMS::handle_client(int fd)
+/* ------------------------------------------------------------------ */
+/* Gestionnaire de connexion (partagé Unix + TCP)                      */
+/* ------------------------------------------------------------------ */
+
+void AMS::handle_client(int fd, const std::string& peer_ip)
 {
     std::string line = readline_fd(fd);
     std::istringstream ss(line);
@@ -44,7 +51,11 @@ void AMS::handle_client(int fd)
         std::string name, address;
         int pid = -1;
         ss >> name >> pid >> address;
-        AgentRecord rec{name, address, pid, "active"};
+        // slave_ip optionnel dans la commande (priorité sur peer_ip)
+        std::string slave_ip;
+        ss >> slave_ip;
+        if (slave_ip.empty() && !peer_ip.empty()) slave_ip = peer_ip;
+        AgentRecord rec{name, address, pid, "active", slave_ip};
         write_str(fd, registerAgent(rec) ? "OK\n" : "ERROR already_registered\n");
 
     } else if (cmd == "DEREGISTER") {
@@ -56,17 +67,21 @@ void AMS::handle_client(int fd)
         std::string name;
         ss >> name;
         auto rec = lookup(name);
-        if (rec && ::kill(rec->pid, 0) < 0 && errno == ESRCH) {
-            // PID mort → purge silencieuse
+        // Pour les agents locaux, vérifier la vivacité via kill()
+        if (rec && rec->slave_ip.empty()
+                && ::kill(rec->pid, 0) < 0 && errno == ESRCH) {
             deregisterAgent(name);
             rec = std::nullopt;
         }
-        if (rec)
+        if (rec) {
+            std::string slave = rec->slave_ip.empty() ? "-" : rec->slave_ip;
             write_str(fd, "OK " + rec->name + " "
                       + std::to_string(rec->pid) + " "
-                      + rec->address + " " + rec->state + "\n");
-        else
+                      + rec->address + " " + rec->state
+                      + " " + slave + "\n");
+        } else {
             write_str(fd, "ERROR not_found\n");
+        }
 
     } else if (cmd == "SETSTATE") {
         std::string name, state;
@@ -74,13 +89,15 @@ void AMS::handle_client(int fd)
         write_str(fd, setState(name, state) ? "OK\n" : "ERROR not_found\n");
 
     } else if (cmd == "LIST") {
-        // Purge les agents dont le PID n'existe plus
+        // Purge les agents locaux morts
         {
             std::lock_guard<std::mutex> lk(mutex_);
             for (auto it = registry_.begin(); it != registry_.end(); ) {
-                if (::kill(it->second.pid, 0) < 0 && errno == ESRCH) {
-                    std::cout << "[AMS] purge (mort) : " << it->second.name
-                              << " (pid=" << it->second.pid << ")\n";
+                auto& r = it->second;
+                if (r.slave_ip.empty()
+                        && ::kill(r.pid, 0) < 0 && errno == ESRCH) {
+                    std::cout << "[AMS] purge (mort) : " << r.name
+                              << " (pid=" << r.pid << ")\n";
                     it = registry_.erase(it);
                 } else {
                     ++it;
@@ -89,9 +106,65 @@ void AMS::handle_client(int fd)
         }
         std::lock_guard<std::mutex> lk(mutex_);
         std::string resp = "OK " + std::to_string(registry_.size()) + "\n";
-        for (auto& [n, r] : registry_)
+        for (auto& [n, r] : registry_) {
+            std::string slave = r.slave_ip.empty() ? "-" : r.slave_ip;
             resp += r.name + " " + std::to_string(r.pid)
-                  + " " + r.address + " " + r.state + "\n";
+                  + " " + r.address + " " + r.state
+                  + " " + slave + "\n";
+        }
+        write_str(fd, resp);
+
+    } else if (cmd == "REGISTER_ENDPOINT") {
+        // Upsert : crée ou met à jour l'endpoint de routage pour un nom visible
+        std::string name, address;
+        int pid = -1;
+        ss >> name >> pid >> address;
+        std::string slave_ip;
+        ss >> slave_ip;
+        if (slave_ip.empty() && !peer_ip.empty()) slave_ip = peer_ip;
+        AgentRecord rec{name, address, pid, "active", slave_ip};
+        registerEndpoint(rec);
+        write_str(fd, "OK\n");
+
+    } else if (cmd == "REGISTER_SLAVE") {
+        // REGISTER_SLAVE <control_port>
+        // peer_ip est l'IP de l'esclave (détectée via getpeername)
+        int control_port = 40015;
+        ss >> control_port;
+        if (peer_ip.empty()) {
+            write_str(fd, "ERROR no_peer_ip\n");
+            return;
+        }
+        // Purge les anciens agents de cet esclave (reconnexion après crash)
+        deregisterSlave(peer_ip);
+        if (slave_registry_)
+            slave_registry_->registerSlave(peer_ip, control_port);
+        write_str(fd, "OK " + peer_ip + "\n");
+
+    } else if (cmd == "HEARTBEAT") {
+        std::string slave_ip;
+        ss >> slave_ip;
+        if (slave_registry_)
+            slave_registry_->heartbeat(slave_ip);
+        write_str(fd, "OK\n");
+
+    } else if (cmd == "DEREGISTER_SLAVE") {
+        std::string slave_ip;
+        ss >> slave_ip;
+        deregisterSlave(slave_ip);
+        if (slave_registry_)
+            slave_registry_->deregisterSlave(slave_ip);
+        write_str(fd, "OK\n");
+
+    } else if (cmd == "LIST_SLAVES") {
+        if (!slave_registry_) {
+            write_str(fd, "OK 0\n");
+            return;
+        }
+        auto slaves = slave_registry_->list();
+        std::string resp = "OK " + std::to_string(slaves.size()) + "\n";
+        for (auto& [ip, port] : slaves)
+            resp += ip + " " + std::to_string(port) + "\n";
         write_str(fd, resp);
 
     } else {
@@ -99,13 +172,17 @@ void AMS::handle_client(int fd)
     }
 }
 
+/* ------------------------------------------------------------------ */
+/* Serveur Unix                                                         */
+/* ------------------------------------------------------------------ */
+
 void AMS::serve(const std::string& socket_path)
 {
     ::unlink(socket_path.c_str());
 
     int server_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
     if (server_fd < 0) {
-        std::cerr << "[AMS] impossible de créer le socket\n";
+        std::cerr << "[AMS] impossible de créer le socket Unix\n";
         return;
     }
 
@@ -116,7 +193,7 @@ void AMS::serve(const std::string& socket_path)
 
     if (::bind(server_fd, reinterpret_cast<struct sockaddr*>(&addr),
                sizeof(addr)) < 0) {
-        std::cerr << "[AMS] bind échoué : " << socket_path << "\n";
+        std::cerr << "[AMS] bind Unix échoué : " << socket_path << "\n";
         ::close(server_fd);
         return;
     }
@@ -128,7 +205,56 @@ void AMS::serve(const std::string& socket_path)
         int client_fd = ::accept(server_fd, nullptr, nullptr);
         if (client_fd < 0) continue;
         std::thread([this, client_fd]() {
-            handle_client(client_fd);
+            handle_client(client_fd, "");
+            ::close(client_fd);
+        }).detach();
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Serveur TCP                                                          */
+/* ------------------------------------------------------------------ */
+
+void AMS::serve_tcp(int port)
+{
+    int server_fd = ::socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd < 0) {
+        std::cerr << "[AMS] impossible de créer le socket TCP\n";
+        return;
+    }
+
+    int opt = 1;
+    ::setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    struct sockaddr_in addr{};
+    addr.sin_family      = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port        = htons(static_cast<uint16_t>(port));
+
+    if (::bind(server_fd, reinterpret_cast<struct sockaddr*>(&addr),
+               sizeof(addr)) < 0) {
+        std::cerr << "[AMS] bind TCP échoué sur port " << port << "\n";
+        ::close(server_fd);
+        return;
+    }
+
+    ::listen(server_fd, 32);
+    std::cout << "[AMS] socket TCP prêt sur port " << port << "\n";
+
+    while (true) {
+        struct sockaddr_in peer_addr{};
+        socklen_t peer_len = sizeof(peer_addr);
+        int client_fd = ::accept(server_fd,
+                                  reinterpret_cast<struct sockaddr*>(&peer_addr),
+                                  &peer_len);
+        if (client_fd < 0) continue;
+
+        char ip_buf[INET_ADDRSTRLEN];
+        ::inet_ntop(AF_INET, &peer_addr.sin_addr, ip_buf, sizeof(ip_buf));
+        std::string peer_ip = ip_buf;
+
+        std::thread([this, client_fd, peer_ip]() {
+            handle_client(client_fd, peer_ip);
             ::close(client_fd);
         }).detach();
     }
@@ -145,8 +271,19 @@ bool AMS::registerAgent(const AgentRecord& rec)
     }
     registry_[rec.name] = rec;
     std::cout << "[AMS] enregistré : " << rec.name
-              << " (pid=" << rec.pid << ")\n";
+              << " (pid=" << rec.pid;
+    if (!rec.slave_ip.empty())
+        std::cout << ", slave=" << rec.slave_ip;
+    std::cout << ")\n";
     return true;
+}
+
+void AMS::registerEndpoint(const AgentRecord& rec)
+{
+    std::lock_guard<std::mutex> lk(mutex_);
+    registry_[rec.name] = rec;   // crée ou écrase l'entrée
+    std::cout << "[AMS] endpoint enregistré : " << rec.name
+              << " → " << rec.address << "\n";
 }
 
 bool AMS::deregisterAgent(const std::string& name)
@@ -157,6 +294,20 @@ bool AMS::deregisterAgent(const std::string& name)
     registry_.erase(it);
     std::cout << "[AMS] désenregistré : " << name << "\n";
     return true;
+}
+
+void AMS::deregisterSlave(const std::string& slave_ip)
+{
+    std::lock_guard<std::mutex> lk(mutex_);
+    for (auto it = registry_.begin(); it != registry_.end(); ) {
+        if (it->second.slave_ip == slave_ip) {
+            std::cout << "[AMS] purge esclave " << slave_ip
+                      << " : " << it->second.name << "\n";
+            it = registry_.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 std::optional<AgentRecord> AMS::lookup(const std::string& name) const
@@ -184,7 +335,9 @@ void AMS::dump() const
         std::cout << "  " << name
                   << "  pid=" << rec.pid
                   << "  addr=" << rec.address
-                  << "  état=" << rec.state << "\n";
+                  << "  état=" << rec.state
+                  << (rec.slave_ip.empty() ? "" : "  slave=" + rec.slave_ip)
+                  << "\n";
 }
 
 std::size_t AMS::size() const
