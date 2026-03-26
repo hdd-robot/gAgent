@@ -8,3 +8,5 @@ Tutoriels
    communication
    environnement
    llm
+   plateforme
+   conclusion

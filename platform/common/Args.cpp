@@ -20,10 +20,53 @@ int Args::getAppName(int argc, char** argv)
     return -1;
 }
 
-static int parse_args(int argc, char** argv,
-                      Args* args,
-                      const std::string& ip_key,
-                      const std::string& port_key)
+int Args::argsUsageAgentManager(int argc, char** argv, Args* args)
+{
+    (void)argc; (void)argv; (void)args;
+    return 0;  // Manager n'a pas d'options réseau à ce niveau
+}
+
+int Args::argsUsageAgentPlatform(int argc, char** argv, Args* args)
+{
+    po::options_description desc("agentplatform — options");
+    desc.add_options()
+        ("help",
+            "Affiche l'aide")
+        ("master",
+            "Démarre en mode master (AMS+DF TCP activés)")
+        ("slave", po::value<std::string>(),
+            "Démarre en mode esclave, ex: --slave 192.168.1.10:40011")
+        ("ip",   po::value<std::string>(),
+            "Adresse IP de cette machine (auto-détectée si absent)")
+        ("port", po::value<std::string>(),
+            "Port AMS (défaut 40011, DF = port+1)")
+        ("control-port", po::value<int>(),
+            "Port du serveur de contrôle sur l'esclave (défaut 40015)")
+        ("base-port", po::value<int>(),
+            "Port de base pour les endpoints ZMQ TCP (défaut 50000)");
+
+    po::variables_map vm;
+    try {
+        po::store(po::parse_command_line(argc, argv, desc), vm);
+        po::notify(vm);
+    } catch (const po::unknown_option& e) {
+        std::cerr << e.what() << "\n";
+        return -1;
+    }
+
+    if (vm.count("help")) { std::cout << desc << "\n"; return 1; }
+
+    if (vm.count("master"))       args->master_       = true;
+    if (vm.count("slave"))        args->slave_addr_   = vm["slave"].as<std::string>();
+    if (vm.count("ip"))           args->local_ip_     = vm["ip"].as<std::string>();
+    if (vm.count("port"))         args->setPortPlt(vm["port"].as<std::string>());
+    if (vm.count("control-port")) args->control_port_ = vm["control-port"].as<int>();
+    if (vm.count("base-port"))    args->base_port_    = vm["base-port"].as<int>();
+
+    return 0;
+}
+
+int Args::argsUsageAgentMonitor(int argc, char** argv, Args* args)
 {
     po::options_description desc("Options");
     desc.add_options()
@@ -40,21 +83,7 @@ static int parse_args(int argc, char** argv,
         return -1;
     }
 
-    if (vm.count("help")) { std::cout << desc << "\n"; return 0; }
-
-    if (vm.count("ip")) {
-        if      (ip_key == "mng") args->setIpAdrMng(vm["ip"].as<std::string>());
-        else if (ip_key == "plt") args->setIpAdrPlt(vm["ip"].as<std::string>());
-        else if (ip_key == "mon") args->setIpAdrMon(vm["ip"].as<std::string>());
-    }
-    if (vm.count("port")) {
-        if      (port_key == "mng") args->setPortMng(vm["port"].as<std::string>());
-        else if (port_key == "plt") args->setPortPlt(vm["port"].as<std::string>());
-        else if (port_key == "mon") args->setPortMon(vm["port"].as<std::string>());
-    }
+    if (vm.count("ip"))   args->setIpAdrMon(vm["ip"].as<std::string>());
+    if (vm.count("port")) args->setPortMon(vm["port"].as<std::string>());
     return 0;
 }
-
-int Args::argsUsageAgentManager (int ac, char** av, Args* a) { return parse_args(ac, av, a, "mng", "mng"); }
-int Args::argsUsageAgentPlatform(int ac, char** av, Args* a) { return parse_args(ac, av, a, "plt", "plt"); }
-int Args::argsUsageAgentMonitor (int ac, char** av, Args* a) { return parse_args(ac, av, a, "mon", "mon"); }

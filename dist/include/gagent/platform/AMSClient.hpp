@@ -1,15 +1,12 @@
 /*
  * AMSClient.hpp — Client de l'Agent Management System
  *
- * Permet à un agent de s'enregistrer, se désenregistrer et
- * interroger le registre AMS via socket Unix.
+ * En mode local : socket Unix.
+ * En mode cluster : socket TCP vers le master.
  *
  * Usage type dans Agent::_init() :
  *   AMSClient ams;
- *   ams.registerAgent("alice", getpid(), "/acl_alice");
- *
- * Si la plateforme n'est pas lancée, les opérations échouent
- * silencieusement (mode dégradé mono-nœud).
+ *   ams.registerAgent("alice", getpid(), endpoint);
  */
 
 #ifndef GAGENT_PLATFORM_AMSCLIENT_HPP_
@@ -24,9 +21,10 @@ namespace platform {
 
 struct AgentInfo {
     std::string name;
-    std::string address;   // MQ name ex: /acl_alice
+    std::string address;   // endpoint ZMQ : ipc:///tmp/acl_<n> ou tcp://ip:port
     int         pid = -1;
     std::string state;     // active | suspended | waiting | deleted
+    std::string slave_ip;  // vide = agent local
 };
 
 class AMSClient {
@@ -34,7 +32,7 @@ public:
     // Enregistre l'agent — retourne true si succès
     bool registerAgent(const std::string& name,
                        int               pid,
-                       const std::string& mq_address);
+                       const std::string& endpoint);
 
     // Désenregistre l'agent
     bool deregisterAgent(const std::string& name);
@@ -48,9 +46,14 @@ public:
     // Liste tous les agents enregistrés
     std::vector<AgentInfo> list();
 
+    // Liste les esclaves : retourne paires (slave_ip, control_port)
+    std::vector<std::pair<std::string, int>> listSlaves();
+
 private:
-    // Ouvre une connexion, envoie cmd, lit la réponse, ferme
+    // Ouvre une connexion, envoie cmd, lit une ligne de réponse, ferme
     std::string request(const std::string& cmd);
+    // Comme request() mais ouvre la connexion et la retourne ouverte pour lire plusieurs lignes
+    int  open_connection();
 };
 
 } // namespace platform

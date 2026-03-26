@@ -7,6 +7,7 @@ add_executable(gAgentPlatform
     df/DF.cpp
     monitor/Monitor.cpp
     manager/Manager.cpp
+    SlaveRegistry.cpp
 )
 
 target_include_directories(gAgentPlatform PRIVATE
