@@ -219,8 +219,8 @@ void Agent::control_message() {
 	std::string mq_name = this->get_msg_queue_name();
 	mqd_t mq;
 
-	const int taille = 100;
-	const int max_msg = 5;
+	const int taille = 1000;
+	const int max_msg = 10;
 	std::vector<char> buffer(taille + 10);
 
 	struct mq_attr attr;
