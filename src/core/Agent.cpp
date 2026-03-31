@@ -1,10 +1,15 @@
 #include "Agent.hpp"
+#include "AgentFactory.hpp"
 #include <gagent/platform/AMSClient.hpp>
+#include <gagent/platform/PlatformConfig.hpp>
 #include <gagent/platform/DFClient.hpp>
 #include <gagent/utils/Logger.hpp>
 #include <gagent/messaging/AclMQ.hpp>
 #include <sys/wait.h>  // For waitpid()
 #include <unistd.h>    // For usleep()
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define BUFLEN 1024  				// Max length of buffer
 
@@ -172,7 +177,85 @@ void Agent::control_Thread() {
 		case Agent::AGENT_TRANSIT:
 			std::cout << "AGENT_TRANSIT" << std::endl;
 			LOG_JSON("agent_lifecycle", {"agent", agentId.getAgentName()}, {"state", "transit"});
-			// pas définie encore
+			{
+				// Sérialiser les attributs
+				std::string attrs_str;
+				for (auto& [k, v] : attributs)
+					attrs_str += k + ":" + v + ";";
+				if (attrs_str.empty()) attrs_str = "-";
+
+				std::string type_name = agentTypeName();
+				std::string ag_name   = agentId.getAgentName();
+				if (ag_name.empty()) ag_name = agentId.getAgentID();
+
+				if (type_name.empty()) {
+					std::cerr << "[Agent] doMove: agentTypeName() non défini"
+					             " — migration annulée\n";
+					// Réactivation
+					std::unique_lock<std::mutex> lk2(mtxInterThred);
+					runingThred = true;
+					cvInterThred.notify_all();
+					break;
+				}
+
+				// Résoudre le port de migration
+				auto& cfg = gagent::platform::PlatformConfig::instance();
+				int mport = migration_target_.port > 0
+				                ? migration_target_.port
+				                : cfg.migrationPort();
+
+				// Connexion TCP vers le serveur de migration de la cible
+				int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+				bool migrated = false;
+				if (fd >= 0) {
+					struct sockaddr_in addr{};
+					addr.sin_family = AF_INET;
+					addr.sin_port   = htons(static_cast<uint16_t>(mport));
+					::inet_pton(AF_INET,
+					            migration_target_.ip.c_str(), &addr.sin_addr);
+					struct timeval tv { cfg.socketTimeout(), 0 };
+					::setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+					::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+
+					if (::connect(fd, reinterpret_cast<struct sockaddr*>(&addr),
+					              sizeof(addr)) == 0)
+					{
+						std::string msg = "ARRIVE " + type_name
+						                + " " + ag_name
+						                + " " + attrs_str + "\n";
+						::write(fd, msg.c_str(), msg.size());
+
+						char resp[16] = {};
+						::read(fd, resp, sizeof(resp) - 1);
+						migrated = (std::string(resp).substr(0, 2) == "OK");
+					}
+					::close(fd);
+				}
+
+				if (!migrated) {
+					std::cerr << "[Agent] doMove: échec connexion à "
+					          << migration_target_.ip << ":" << mport
+					          << " — migration annulée\n";
+					std::unique_lock<std::mutex> lk2(mtxInterThred);
+					runingThred = true;
+					cvInterThred.notify_all();
+					break;
+				}
+
+				// Migration réussie : nettoyage et sortie
+				std::string name = ag_name;
+				LOG_JSON("agent_migrate",
+				    {"agent", name},
+				    {"to",    migration_target_.ip},
+				    {"type",  type_name}
+				);
+				gagent::platform::AMSClient ams;
+				ams.deregisterAgent(name);
+				gagent::platform::DFClient df;
+				df.deregisterAgent(name);
+				gagent::messaging::acl_flush();
+				_exit(0);
+			}
 			break;
 		case Agent::AGENT_WAITING:
 			std::cout << "AGENT_WAITING" << std::endl;
@@ -287,6 +370,15 @@ int Agent::doWake() {
 
 int Agent::doMove() {
 	return doAction(Agent::AGENT_TRANSIT);
+}
+
+int Agent::doMove(const MigrationTarget& target) {
+	migration_target_ = target;
+	return doAction(Agent::AGENT_TRANSIT);
+}
+
+void Agent::setAgentName(const std::string& name) {
+	agentId.setName(name);
 }
 
 int Agent::doAction(const int act) {
