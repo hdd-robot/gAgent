@@ -8,6 +8,7 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
+#include <cerrno>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -36,6 +37,9 @@ Environnement::Environnement()
 
 Environnement::~Environnement()
 {
+    // Arrêt propre du thread MQ avant destruction
+    mq_running_ = false;
+    if (mq_thread_.joinable()) mq_thread_.join();
     delete udpMonitor;
 }
 
@@ -43,7 +47,7 @@ void Environnement::readDataFromQueueMsg()
 {
     const std::string mq_name = "/envqueuemsg";
     const int taille  = 1000;
-    const int max_msg = 5;
+    const int max_msg = 10;  // défaut système Linux (msg_max)
 
     struct mq_attr attr;
     attr.mq_flags   = 0;
@@ -53,18 +57,23 @@ void Environnement::readDataFromQueueMsg()
 
     mqd_t mq = mq_open(mq_name.c_str(), O_RDONLY | O_CREAT, 0666, &attr);
     if (mq == (mqd_t)-1) {
-        perror("mq_open ");
-        std::cout << "Error create Message Queue" << std::endl;
+        std::cerr << "[Environnement] mq_open échoué : " << strerror(errno) << "\n";
         return;
     }
 
     std::vector<char> buffer(taille);
     std::map<std::string, std::string> m;
 
-    while (true) {
-        int ret = mq_receive(mq, buffer.data(), taille, nullptr);
+    while (mq_running_) {
+        // Timeout 1s pour pouvoir vérifier mq_running_ régulièrement
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_sec += 1;
+
+        int ret = mq_timedreceive(mq, buffer.data(), taille, nullptr, &ts);
         if (ret < 0) {
-            perror("mq_receive ");
+            if (errno == ETIMEDOUT || errno == EINTR) continue;
+            std::cerr << "[Environnement] mq_receive : " << strerror(errno) << "\n";
             continue;
         }
 
@@ -76,18 +85,21 @@ void Environnement::readDataFromQueueMsg()
                 std::lock_guard<std::mutex> lk(env_mutex_);
                 list_attr[agent_id] = m;
             }
-        } else {
-            std::cout << "message non conforme : " << sbuffer << std::endl;
         }
     }
+
+    mq_close(mq);
+    mq_unlink(mq_name.c_str());  // nettoyage à l'arrêt
 }
 
 void Environnement::start()
 {
     init_env();
     link_attribut();
-    std::thread(&Environnement::readDataFromQueueMsg, this).detach();
+    mq_thread_ = std::thread(&Environnement::readDataFromQueueMsg, this);
     event_loop();   // bloquant — garde le processus enfant en vie
+    mq_running_ = false;
+    if (mq_thread_.joinable()) mq_thread_.join();
 }
 
 // ── Helpers internes ──────────────────────────────────────────────────────────
@@ -209,10 +221,17 @@ int Environnement::sendMsgMonitor(std::string msg)
 static std::string env_readline_fd(int fd)
 {
     std::string line;
-    char c;
-    while (::read(fd, &c, 1) == 1) {
-        if (c == '\n') break;
-        line += c;
+    char buf[4096];
+    while (true) {
+        ssize_t n = ::recv(fd, buf, sizeof(buf), MSG_PEEK);
+        if (n <= 0) break;
+        char* nl = static_cast<char*>(memchr(buf, '\n', static_cast<size_t>(n)));
+        size_t to_read = nl ? static_cast<size_t>(nl - buf + 1)
+                            : static_cast<size_t>(n);
+        ssize_t r = ::read(fd, buf, to_read);
+        if (r <= 0) break;
+        if (nl) { line.append(buf, static_cast<size_t>(r) - 1); break; }
+        line.append(buf, static_cast<size_t>(r));
     }
     return line;
 }
