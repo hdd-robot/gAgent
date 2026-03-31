@@ -27,6 +27,7 @@
 #include <sys/mman.h>
 #include <cstring>
 #include <climits>
+#include <unistd.h>
 
 using namespace gagent;
 using namespace gagent::protocols;
@@ -197,8 +198,11 @@ int main()
 
     init_shared();
 
-    for (auto n : {"donneur","transp-a","transp-b","transp-c",
-                   "donneur2","transp-d","transp-e"})
+    // Préfixe unique par run pour éviter les collisions IPC en parallèle
+    std::string P = std::to_string(::getpid()) + "-";
+
+    for (auto n : {P+"donneur", P+"transp-a", P+"transp-b", P+"transp-c",
+                   P+"donneur2", P+"transp-d", P+"transp-e"})
         acl_unlink(n);
 
     AgentCore::initAgentSystem();
@@ -206,17 +210,17 @@ int main()
     int ok = 0, fail = 0;
 
     // ── Scénario 1 : succès ───────────────────────────────────────────────────
-    std::cout << "--- Scénario 1 : enchère (transp-a gagne) ---\n";
+    std::cout << "--- Scénario 1 : enchère (" << P << "transp-a gagne) ---\n";
     {
-        TransporteurAgent ta("transp-a", 70);
-        TransporteurAgent tb("transp-b", 85);
-        TransporteurAgent tc("transp-c", 0, true);
+        TransporteurAgent ta(P+"transp-a", 70);
+        TransporteurAgent tb(P+"transp-b", 85);
+        TransporteurAgent tc(P+"transp-c", 0, true);
         ta.init(); tb.init(); tc.init();
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         DonneurAgent donneur({
-            "donneur",
-            {AgentIdentifier{"transp-a"}, AgentIdentifier{"transp-b"}, AgentIdentifier{"transp-c"}},
+            P+"donneur",
+            {AgentIdentifier{P+"transp-a"}, AgentIdentifier{P+"transp-b"}, AgentIdentifier{P+"transp-c"}},
             g_shared->winner, &g_shared->proposal_count,
             &g_shared->refuse_count, &g_shared->inform_received,
             g_shared->inform_content
@@ -230,7 +234,7 @@ int main()
     }
 
     std::cout << "  gagnant : " << g_shared->winner << "\n";
-    run_check(std::string(g_shared->winner) == "transp-a",
+    run_check(std::string(g_shared->winner) == P+"transp-a",
               "gagnant = transp-a (moins cher 70€)",               ok, fail);
     run_check(g_shared->proposal_count == 2, "2 offres PROPOSE reçues",    ok, fail);
     run_check(g_shared->refuse_count   == 1, "1 REFUSE reçu (transp-c)",   ok, fail);
@@ -241,14 +245,14 @@ int main()
     // ── Scénario 2 : tous refusent ────────────────────────────────────────────
     std::cout << "\n--- Scénario 2 : tous les participants refusent ---\n";
     {
-        TransporteurAgent td("transp-d", 0, true);
-        TransporteurAgent te("transp-e", 0, true);
+        TransporteurAgent td(P+"transp-d", 0, true);
+        TransporteurAgent te(P+"transp-e", 0, true);
         td.init(); te.init();
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         DonneurAgent donneur2({
-            "donneur2",
-            {AgentIdentifier{"transp-d"}, AgentIdentifier{"transp-e"}},
+            P+"donneur2",
+            {AgentIdentifier{P+"transp-d"}, AgentIdentifier{P+"transp-e"}},
             g_shared->winner2, &g_shared->proposal_count2,
             &g_shared->refuse_count2, &g_shared->inform_received2,
             nullptr

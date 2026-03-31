@@ -32,7 +32,10 @@ public:
     const std::string& slaveIP()     const { return slave_ip_; }
 
     // Port du serveur de contrôle sur l'esclave (défaut 40015)
-    int                controlPort() const { return control_port_; }
+    int                controlPort()   const { return control_port_; }
+
+    // Port du serveur de migration d'agents (défaut control_port + 1 = 40016)
+    int                migrationPort() const { return control_port_ + 1; }
 
     // Port de base pour les endpoints ZMQ TCP (défaut 50000)
     int                basePort()    const { return base_port_; }

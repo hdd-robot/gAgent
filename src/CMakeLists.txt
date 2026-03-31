@@ -23,6 +23,7 @@ ADD_FLEX_BISON_DEPENDENCY(FipaAclLexer FipaAclParser)
 
 set(SRCS
     core/Agent.cpp
+    core/AgentFactory.cpp
     core/AgentCore.cpp
     core/AgentID.cpp
     core/AgentService.cpp
