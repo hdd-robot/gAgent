@@ -33,6 +33,7 @@
 #include <map>
 
 
+#include <memory>
 #include <gagent/utils/udp_client_server.hpp>
 #include "Behaviour.hpp"
 #include "AgentID.hpp"
@@ -142,7 +143,7 @@ private:
 	std::string agentDateCreate;
 	int debug;
 
-	udp_client_server::udp_client * udpMonitor;
+	std::unique_ptr<udp_client_server::udp_client> udpMonitor;
 
 };
 

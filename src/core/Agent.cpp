@@ -59,7 +59,7 @@ void Agent::_init(int dbg) {
 
 
 	if (dbg > 0) {
-		this->udpMonitor = new udp_client_server::udp_client("127.0.0.1", 40013);
+		this->udpMonitor = std::make_unique<udp_client_server::udp_client>("127.0.0.1", 40013);
 	}
 
 	std::string pid = boost::lexical_cast<std::string>(chldpid);
@@ -96,13 +96,11 @@ void Agent::_init(int dbg) {
 void Agent::exthread(Behaviour* beh) {
 
 	beh->onStart();
-	while (beh->done() == false) {
-		std::unique_lock < std::mutex > lck2(mtxInterThred);
-		while (!runingThred) {
-			cvInterThred.wait(lck2);
-
+	while (!beh->done()) {
+		{
+			std::unique_lock<std::mutex> lck(mtxInterThred);
+			cvInterThred.wait(lck, [this]{ return runingThred; });
 		}
-		lck2.unlock();
 		beh->action();
 	}
 	beh->onEnd();
