@@ -8,4 +8,5 @@ V — La plateforme
    platform_outils
    platform_multihost
    platform_reseau
+   platform_migration
    debug_logging

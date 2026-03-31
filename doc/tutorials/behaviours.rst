@@ -45,6 +45,12 @@ Vue d'ensemble des types
      - Attendre un certain délai, puis faire quelque chose une fois
    * - ``TickerBehaviour``
      - Répéter quelque chose à intervalle régulier
+   * - ``SequentialBehaviour``
+     - Enchaîner plusieurs sous-behaviours dans l'ordre
+   * - ``ParallelBehaviour``
+     - Exécuter plusieurs sous-behaviours en même temps
+   * - ``FSMBehaviour``
+     - Machine à états finis — un état = un behaviour
 
 ----
 
@@ -243,11 +249,305 @@ l'agent tourne jusqu'à Ctrl+C.
 
 ----
 
+Behaviours composites
+----------------------
+
+Les behaviours composites permettent d'**orchestrer** plusieurs sous-tâches
+à l'intérieur d'un seul behaviour. Ils s'ajoutent à l'agent comme n'importe
+quel autre behaviour, mais délèguent leur exécution à des enfants.
+
+.. note::
+
+   Les sous-behaviours d'un composite s'exécutent dans le **même thread**
+   que le composite lui-même. Pour une vraie exécution en parallèle sur des
+   threads séparés, utilisez ``addBehaviour()`` directement dans ``setup()``.
+
+``SequentialBehaviour`` — enchaîner des étapes dans l'ordre
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Exécute les sous-behaviours **un par un** dans l'ordre où ils ont été
+ajoutés. Dès qu'un enfant est terminé (``done()`` retourne ``true``),
+le suivant démarre.
+
+**Exemple — processus en trois étapes :**
+
+.. code-block:: cpp
+
+   class EtapeInit : public OneShotBehaviour {
+   public:
+       EtapeInit(Agent* ag) : OneShotBehaviour(ag) {}
+       void action() override {
+           std::cout << "Étape 1 : initialisation" << std::endl;
+       }
+   };
+
+   class EtapeTraitement : public Behaviour {
+       int steps_ = 0;
+   public:
+       EtapeTraitement(Agent* ag) : Behaviour(ag) {}
+       void action() override {
+           std::cout << "Étape 2 : traitement " << ++steps_ << "/3" << std::endl;
+           sleep(1);
+       }
+       bool done() override { return steps_ >= 3; }
+   };
+
+   class EtapeConclusion : public OneShotBehaviour {
+   public:
+       EtapeConclusion(Agent* ag) : OneShotBehaviour(ag) {}
+       void action() override {
+           std::cout << "Étape 3 : rapport final" << std::endl;
+       }
+   };
+
+   class MonAgent : public Agent {
+   public:
+       void setup() override {
+           auto* seq = new SequentialBehaviour(this);
+           seq->addSubBehaviour(new EtapeInit(this));
+           seq->addSubBehaviour(new EtapeTraitement(this));
+           seq->addSubBehaviour(new EtapeConclusion(this));
+           addBehaviour(seq);
+       }
+   };
+
+``ParallelBehaviour`` — plusieurs tâches en un seul behaviour
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Appelle ``action()`` sur tous les enfants à chaque tick. La condition
+de fin est configurable :
+
+- ``WhenDone::ALL`` (défaut) — attend que **tous** les enfants aient fini
+- ``WhenDone::ANY`` — termine dès qu'**un** enfant est terminé
+
+**Exemple — attendre que deux capteurs soient prêts :**
+
+.. code-block:: cpp
+
+   class LectureCapteur : public Behaviour {
+       std::string nom_;
+       int lectures_ = 0;
+   public:
+       LectureCapteur(Agent* ag, std::string nom)
+           : Behaviour(ag), nom_(std::move(nom)) {}
+
+       void action() override {
+           std::cout << nom_ << " : lecture " << ++lectures_ << std::endl;
+           sleep(1);
+       }
+       bool done() override { return lectures_ >= 5; }
+   };
+
+   class MonAgent : public Agent {
+   public:
+       void setup() override {
+           // Termine quand les DEUX capteurs ont fait 5 lectures
+           auto* par = new ParallelBehaviour(this, ParallelBehaviour::WhenDone::ALL);
+           par->addSubBehaviour(new LectureCapteur(this, "Capteur-A"));
+           par->addSubBehaviour(new LectureCapteur(this, "Capteur-B"));
+           addBehaviour(par);
+       }
+   };
+
+``FSMBehaviour`` — machine à états finis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Chaque état est un behaviour. Quand un état est terminé, sa méthode
+``exitValue()`` détermine la prochaine transition.
+
+**Exemple simple — feu de signalisation (Rouge → Vert → Orange) :**
+
+.. code-block:: cpp
+
+   class EtatFeu : public OneShotBehaviour {
+       std::string couleur_;
+       int exit_val_;
+   public:
+       EtatFeu(Agent* ag, std::string couleur, int exit_val)
+           : OneShotBehaviour(ag), couleur_(std::move(couleur))
+           , exit_val_(exit_val) {}
+
+       void action() override {
+           std::cout << "Feu : " << couleur_ << std::endl;
+           sleep(2);
+       }
+       int exitValue() override { return exit_val_; }
+   };
+
+   class AgentFeu : public Agent {
+   public:
+       void setup() override {
+           auto* fsm = new FSMBehaviour(this);
+
+           fsm->registerFirstState(new EtatFeu(this, "ROUGE",  0), "rouge");
+           fsm->registerState     (new EtatFeu(this, "VERT",   0), "vert");
+           fsm->registerLastState (new EtatFeu(this, "ORANGE", 0), "orange");
+
+           fsm->registerDefaultTransition("rouge",  "vert");
+           fsm->registerDefaultTransition("vert",   "orange");
+           // orange est un état "last" : plus de transition nécessaire
+
+           addBehaviour(fsm);
+       }
+   };
+
+Pour une FSM qui boucle indéfiniment, utilisez des états normaux (non
+``last``) avec une transition qui revient au départ :
+
+.. code-block:: cpp
+
+   fsm->registerState(new EtatFeu(this, "ROUGE",  0), "rouge");
+   fsm->registerState(new EtatFeu(this, "VERT",   0), "vert");
+   fsm->registerState(new EtatFeu(this, "ORANGE", 0), "orange");
+
+   fsm->registerDefaultTransition("rouge",  "vert");
+   fsm->registerDefaultTransition("vert",   "orange");
+   fsm->registerDefaultTransition("orange", "rouge");   // ← boucle
+
+   fsm->registerFirstState(/* même état */ ..., "rouge");
+
+----
+
+**Exemple avec graphe — distributeur automatique**
+
+Le graphe ci-dessous montre les états et les transitions conditionnelles.
+Les labels sur les flèches correspondent aux valeurs retournées par
+``exitValue()``.
+
+.. graphviz::
+
+   digraph distributeur {
+       rankdir=LR;
+       node [shape=rectangle, style=rounded, fontname="sans-serif"];
+       edge [fontname="sans-serif", fontsize=10];
+
+       start  [shape=point, width=0.2];
+       DIST   [label="DISTRIBUTION\n(last)", shape=doublecircle];
+       ANNUL  [label="ANNULATION\n(last)",   shape=doublecircle];
+
+       start       -> ATTENTE;
+       ATTENTE     -> SELECTION    [label=" 0 : monnaie insérée"];
+       SELECTION   -> VERIFICATION [label=" 0 : produit choisi"];
+       SELECTION   -> ANNULATION   [label=" 1 : annulé"];
+       VERIFICATION -> DISTRIBUTION [label=" 0 : en stock"];
+       VERIFICATION -> ANNULATION  [label=" 1 : rupture"];
+       ANNULATION  -> ATTENTE      [label=" 0 (défaut)"];
+   }
+
+Correspondance graphe → code :
+
+.. code-block:: cpp
+
+   // ── États ────────────────────────────────────────────────────────────────
+
+   // Attend qu'une pièce soit insérée (simulé par un délai).
+   // exitValue 0 = pièce détectée
+   class EtatAttente : public Behaviour {
+       int ticks_ = 0;
+   public:
+       EtatAttente(Agent* ag) : Behaviour(ag) {}
+       void onStart() override {
+           std::cout << "[distributeur] En attente d'une pièce...\n";
+           ticks_ = 0;
+       }
+       void action() override { sleep(1); ticks_++; }
+       bool done()   override { return ticks_ >= 2; }    // 2s = pièce insérée
+       int  exitValue() override { return 0; }
+   };
+
+   // Simule le choix d'un produit.
+   // exitValue 0 = produit sélectionné, 1 = annulé
+   class EtatSelection : public Behaviour {
+       int choix_ = 0;
+   public:
+       EtatSelection(Agent* ag) : Behaviour(ag) {}
+       void onStart() override {
+           std::cout << "[distributeur] Sélection du produit...\n";
+           choix_ = 0;
+       }
+       void action() override { sleep(1); choix_++; }
+       bool done()   override { return choix_ >= 1; }
+       // 0 = produit choisi, 1 = annulé (simulé selon la parité)
+       int  exitValue() override { return (choix_ % 2 == 0) ? 1 : 0; }
+   };
+
+   // Vérifie le stock.
+   // exitValue 0 = en stock, 1 = rupture
+   class EtatVerification : public OneShotBehaviour {
+       bool en_stock_;
+   public:
+       EtatVerification(Agent* ag, bool en_stock)
+           : OneShotBehaviour(ag), en_stock_(en_stock) {}
+       void action() override {
+           std::cout << "[distributeur] Vérification stock : "
+                     << (en_stock_ ? "OK" : "rupture") << "\n";
+       }
+       int exitValue() override { return en_stock_ ? 0 : 1; }
+   };
+
+   class EtatDistribution : public OneShotBehaviour {
+   public:
+       EtatDistribution(Agent* ag) : OneShotBehaviour(ag) {}
+       void action() override {
+           std::cout << "[distributeur] Produit distribué !\n";
+       }
+   };
+
+   class EtatAnnulation : public OneShotBehaviour {
+   public:
+       EtatAnnulation(Agent* ag) : OneShotBehaviour(ag) {}
+       void action() override {
+           std::cout << "[distributeur] Monnaie rendue, opération annulée.\n";
+       }
+       int exitValue() override { return 0; }   // → retour ATTENTE
+   };
+
+   // ── Agent ─────────────────────────────────────────────────────────────────
+
+   class AgentDistributeur : public Agent {
+   public:
+       void setup() override {
+           auto* fsm = new FSMBehaviour(this);
+
+           // États
+           fsm->registerFirstState(new EtatAttente(this),              "attente");
+           fsm->registerState     (new EtatSelection(this),            "selection");
+           fsm->registerState     (new EtatVerification(this, true),   "verification");
+           fsm->registerLastState (new EtatDistribution(this),         "distribution");
+           fsm->registerState     (new EtatAnnulation(this),           "annulation");
+
+           // Transitions depuis ATTENTE
+           fsm->registerTransition("attente",      "selection",    0); // pièce OK
+
+           // Transitions depuis SELECTION
+           fsm->registerTransition("selection",    "verification", 0); // produit choisi
+           fsm->registerTransition("selection",    "annulation",   1); // annulé
+
+           // Transitions depuis VERIFICATION
+           fsm->registerTransition("verification", "distribution", 0); // en stock
+           fsm->registerTransition("verification", "annulation",   1); // rupture
+
+           // ANNULATION retourne à ATTENTE
+           fsm->registerDefaultTransition("annulation", "attente");
+
+           addBehaviour(fsm);
+       }
+   };
+
+.. note::
+
+   ``registerLastState`` marque ``distribution`` comme état terminal :
+   la FSM s'arrête dès que cet état est terminé.
+   ``annulation`` est un état ordinaire avec une transition de retour
+   vers ``attente`` — la machine continue à servir.
+
+----
+
 Résumé
 ------
 
 .. list-table::
-   :widths: 25 20 55
+   :widths: 28 22 50
    :header-rows: 1
 
    * - Type
@@ -268,3 +568,12 @@ Résumé
    * - ``TickerBehaviour``
      - ``onTick()``
      - Exécute ``onTick()`` toutes les N millisecondes, indéfiniment
+   * - ``SequentialBehaviour``
+     - ``addSubBehaviour()``
+     - Enchaîne les enfants dans l'ordre
+   * - ``ParallelBehaviour``
+     - ``addSubBehaviour()``
+     - Tick tous les enfants à chaque tour (ALL ou ANY)
+   * - ``FSMBehaviour``
+     - ``registerFirstState()``, ``registerTransition()``
+     - Machine à états, transitions par ``exitValue()``
