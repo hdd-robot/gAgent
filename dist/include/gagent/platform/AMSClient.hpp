@@ -34,6 +34,12 @@ public:
                        int               pid,
                        const std::string& endpoint);
 
+    // Enregistre ou met à jour l'endpoint de routage (utilisé par acl_bind)
+    // Toujours succède — crée ou écrase l'entrée existante
+    void registerEndpoint(const std::string& name,
+                          int               pid,
+                          const std::string& endpoint);
+
     // Désenregistre l'agent
     bool deregisterAgent(const std::string& name);
 

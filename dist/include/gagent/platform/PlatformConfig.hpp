@@ -32,10 +32,16 @@ public:
     const std::string& slaveIP()     const { return slave_ip_; }
 
     // Port du serveur de contrôle sur l'esclave (défaut 40015)
-    int                controlPort() const { return control_port_; }
+    int                controlPort()   const { return control_port_; }
+
+    // Port du serveur de migration d'agents (défaut control_port + 1 = 40016)
+    int                migrationPort() const { return control_port_ + 1; }
 
     // Port de base pour les endpoints ZMQ TCP (défaut 50000)
     int                basePort()    const { return base_port_; }
+
+    // Timeout connexion socket AMS/DF en secondes (défaut 5)
+    int                socketTimeout() const { return socket_timeout_; }
 
     // true si cette machine fait partie d'un cluster (master ou slave)
     bool               isCluster()   const { return !slave_ip_.empty(); }
@@ -50,10 +56,11 @@ private:
     void load(const std::string& path);
 
     std::string master_ip_;
-    int         master_port_  = 40011;
+    int         master_port_    = 40011;
     std::string slave_ip_;
-    int         control_port_ = 40015;
-    int         base_port_    = 50000;
+    int         control_port_  = 40015;
+    int         base_port_     = 50000;
+    int         socket_timeout_ = 5;    // secondes
 };
 
 // Fonctions libres pour la compatibilité avec l'ancien code

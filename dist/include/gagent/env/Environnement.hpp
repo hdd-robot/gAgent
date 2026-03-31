@@ -11,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <mutex>
+#include <atomic>
 #include <mqueue.h>
 #include <thread>
 #include <gagent/env/VisualAgent.hpp>
@@ -85,6 +86,8 @@ private:
     int nsap_seq_ = 0;
     std::mutex env_mutex_;
     udp_client_server::udp_client* udpMonitor = nullptr;
+    std::atomic<bool> mq_running_{true};
+    std::thread       mq_thread_;
 };
 
 } // namespace gagent

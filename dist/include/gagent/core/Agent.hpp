@@ -33,6 +33,7 @@
 #include <map>
 
 
+#include <memory>
 #include <gagent/utils/udp_client_server.hpp>
 #include "Behaviour.hpp"
 #include "AgentID.hpp"
@@ -72,13 +73,31 @@ public:
 	virtual void setup() = 0; // a redéfinir obligatoirement
 	virtual void takeDown();  // a redéfinir au choix
 
+	// Nom du type d'agent — à surcharger pour permettre la migration.
+	// Doit correspondre au nom enregistré dans AgentFactory::registerType().
+	virtual std::string agentTypeName() const { return ""; }
+
 	int doDelete();
 	int doActivate();
 	int doSuspend();
 	int doWait();
 	int doWake();
 	int doMove();
+
+	// Migration vers un nœud distant.
+	// Sérialise les attributs, crée l'agent sur la cible, puis se supprime.
+	// Requiert agentTypeName() non vide et AgentFactory::startMigrationServer()
+	// démarré sur la machine cible.
+	struct MigrationTarget {
+		std::string ip;
+		int         port = -1;  // -1 = PlatformConfig::migrationPort()
+	};
+	int doMove(const MigrationTarget& target);
+
 	int doAction(const int);
+
+	// Permet de fixer le nom avant init() (utile lors de la migration).
+	void setAgentName(const std::string& name);
 
 	void addBehaviour(Behaviour*);
 	void removeBehaviour(Behaviour*);
@@ -117,7 +136,7 @@ public:
 
 private:
 
-
+	MigrationTarget migration_target_;
 
 	std::map<std::string,std::string> attributs;
 
@@ -142,7 +161,7 @@ private:
 	std::string agentDateCreate;
 	int debug;
 
-	udp_client_server::udp_client * udpMonitor;
+	std::unique_ptr<udp_client_server::udp_client> udpMonitor;
 
 };
 
