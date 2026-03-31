@@ -1,5 +1,6 @@
 #include "AMS.hpp"
 #include "../SlaveRegistry.hpp"
+#include "../common/socket_utils.hpp"
 
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -15,26 +16,6 @@
 
 namespace gagent {
 namespace platform {
-
-/* ------------------------------------------------------------------ */
-/* Utilitaires                                                          */
-/* ------------------------------------------------------------------ */
-
-static std::string readline_fd(int fd)
-{
-    std::string line;
-    char c;
-    while (::read(fd, &c, 1) == 1) {
-        if (c == '\n') break;
-        line += c;
-    }
-    return line;
-}
-
-static void write_str(int fd, const std::string& s)
-{
-    ::write(fd, s.c_str(), s.size());
-}
 
 /* ------------------------------------------------------------------ */
 /* Gestionnaire de connexion (partagé Unix + TCP)                      */

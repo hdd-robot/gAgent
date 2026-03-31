@@ -11,21 +11,10 @@
 #include <iostream>
 #include <cstring>
 
+#include "../../platform/common/socket_utils.hpp"
+
 namespace gagent {
 namespace platform {
-
-/* ------------------------------------------------------------------ */
-
-static std::string readline_fd(int fd)
-{
-    std::string line;
-    char c;
-    while (::read(fd, &c, 1) == 1) {
-        if (c == '\n') break;
-        line += c;
-    }
-    return line;
-}
 
 /* Ouvre une connexion vers le DF (Unix ou TCP selon PlatformConfig). */
 static int open_df_connection()
@@ -47,7 +36,7 @@ static int open_df_connection()
             ::close(fd); return -1;
         }
 
-        struct timeval tv { 2, 0 };
+        struct timeval tv { cfg.socketTimeout(), 0 };
         ::setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
         ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 

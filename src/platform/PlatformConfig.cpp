@@ -30,11 +30,12 @@ void PlatformConfig::load(const std::string& path)
         std::string key   = line.substr(0, eq);
         std::string value = line.substr(eq + 1);
 
-        if      (key == "master_ip")    master_ip_    = value;
-        else if (key == "master_port")  master_port_  = std::stoi(value);
-        else if (key == "slave_ip")     slave_ip_     = value;
-        else if (key == "control_port") control_port_ = std::stoi(value);
-        else if (key == "base_port")    base_port_    = std::stoi(value);
+        if      (key == "master_ip")      master_ip_      = value;
+        else if (key == "master_port")    master_port_    = std::stoi(value);
+        else if (key == "slave_ip")       slave_ip_       = value;
+        else if (key == "control_port")   control_port_   = std::stoi(value);
+        else if (key == "base_port")      base_port_      = std::stoi(value);
+        else if (key == "socket_timeout") socket_timeout_ = std::stoi(value);
     }
 }
 

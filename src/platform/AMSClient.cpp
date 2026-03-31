@@ -12,23 +12,11 @@
 #include <cerrno>
 #include <cstring>
 
+// readline_fd partagé avec le reste de la plateforme
+#include "../../platform/common/socket_utils.hpp"
+
 namespace gagent {
 namespace platform {
-
-/* ------------------------------------------------------------------ */
-/* Utilitaires internes                                                 */
-/* ------------------------------------------------------------------ */
-
-static std::string readline_fd(int fd)
-{
-    std::string line;
-    char c;
-    while (::read(fd, &c, 1) == 1) {
-        if (c == '\n') break;
-        line += c;
-    }
-    return line;
-}
 
 /* Ouvre une connexion vers l'AMS (Unix ou TCP selon PlatformConfig).
  * Retourne le fd ouvert, ou -1 en cas d'erreur. */
@@ -50,7 +38,7 @@ int AMSClient::open_connection()
             return -1;
         }
 
-        struct timeval tv { 2, 0 };  // timeout connexion 2 s
+        struct timeval tv { cfg.socketTimeout(), 0 };
         ::setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
         ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
