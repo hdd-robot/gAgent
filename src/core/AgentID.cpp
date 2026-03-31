@@ -6,6 +6,7 @@
  */
 
 #include "AgentID.hpp"
+#include <mutex>
 
 namespace gagent {
 
@@ -41,11 +42,12 @@ std::string gagent::AgentID::random_string(size_t length) {
 
 	static std::mt19937 rg(std::chrono::system_clock::now().time_since_epoch().count());
 	static std::uniform_int_distribution<> pick(0, alphanums.size() - 1);
+	static std::mutex gen_mutex;
 
 	std::string s;
-
 	s.reserve(length);
 
+	std::lock_guard<std::mutex> lk(gen_mutex);
 	while (length--)
 		s += alphanums[pick(rg)];
 
