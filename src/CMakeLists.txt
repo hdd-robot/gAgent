@@ -34,7 +34,6 @@ set(SRCS
     messaging/FipaAclDriver.cpp
     env/Environnement.cpp
     env/VisualAgent.cpp
-    comm/CommunicationManager.cpp
     utils/ErrorHandler.cpp
     utils/udp_client_server.cpp
     platform/AMSClient.cpp
