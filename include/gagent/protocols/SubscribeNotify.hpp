@@ -63,7 +63,6 @@
 #include <gagent/core/Behaviour.hpp>
 #include <gagent/messaging/ACLMessage.hpp>
 #include <gagent/messaging/AgentIdentifier.hpp>
-#include <gagent/messaging/AclMQ.hpp>
 
 #include <string>
 #include <vector>
@@ -72,11 +71,6 @@
 
 namespace gagent {
 namespace protocols {
-
-using messaging::acl_send;
-using messaging::acl_receive;
-using messaging::acl_unlink;
-using messaging::acl_bind;
 
 // ── SubscribeInitiator ────────────────────────────────────────────────────────
 
@@ -121,7 +115,7 @@ public:
     // ── Behaviour interface ───────────────────────────────────────────────────
 
     void onStart() override {
-        acl_bind(my_name_);
+        this_agent->transport().bind(my_name_);
     }
 
     void action() override
@@ -140,7 +134,7 @@ public:
             sub.setConversationId(conv_id_);
             sub.setReplyWith("sub-" + conv_id_);
             sub.setProtocol("fipa-subscribe");
-            acl_send(publisher_, sub);
+            this_agent->transport().send(publisher_, sub);
 
             deadline_ = std::chrono::steady_clock::now()
                       + std::chrono::milliseconds(agree_timeout_);
@@ -159,7 +153,7 @@ public:
                             deadline_ - now).count();
             int tmo = static_cast<int>(std::min<long long>(500, left));
 
-            auto opt = acl_receive(my_name_, tmo);
+            auto opt = this_agent->transport().receive(my_name_, tmo);
             if (!opt) break;
 
             auto& msg = *opt;
@@ -182,12 +176,12 @@ public:
                 cancel.setSender(AgentIdentifier{my_name_});
                 cancel.setConversationId(conv_id_);
                 cancel.setProtocol("fipa-subscribe");
-                acl_send(publisher_, cancel);
+                this_agent->transport().send(publisher_, cancel);
                 state_ = State::WAIT_CANCEL_ACK;
                 break;
             }
 
-            auto opt = acl_receive(my_name_, 300);
+            auto opt = this_agent->transport().receive(my_name_, 300);
             if (!opt) break;
 
             auto& msg = *opt;
@@ -199,7 +193,7 @@ public:
         }
 
         case State::WAIT_CANCEL_ACK: {
-            auto opt = acl_receive(my_name_, 2000);
+            auto opt = this_agent->transport().receive(my_name_, 2000);
             if (opt && opt->getConversationId() == conv_id_)
                 handleNotify(*opt);  // dernier INFORM éventuel
             done_ = true;
@@ -267,7 +261,6 @@ public:
     void notify(const std::string& content,
                 const std::string& ontology = "")
     {
-        std::vector<std::string> dead;
         for (auto& [name, sub] : subscribers_) {
             ACLMessage inf(ACLMessage::Performative::INFORM);
             inf.setSender(AgentIdentifier{my_name_});
@@ -275,7 +268,7 @@ public:
             inf.setConversationId(sub.conv_id);
             inf.setProtocol("fipa-subscribe");
             if (!ontology.empty()) inf.setOntology(ontology);
-            acl_send(name, inf);
+            this_agent->transport().send(name, inf);
         }
     }
 
@@ -292,7 +285,7 @@ public:
         inf.setConversationId(it->second.conv_id);
         inf.setProtocol("fipa-subscribe");
         if (!ontology.empty()) inf.setOntology(ontology);
-        acl_send(subscriber, inf);
+        this_agent->transport().send(subscriber, inf);
     }
 
     /** Nombre de subscribers actifs. */
@@ -302,7 +295,7 @@ public:
 
     void action() override
     {
-        auto opt = acl_receive(my_name_, poll_ms_);
+        auto opt = this_agent->transport().receive(my_name_, poll_ms_);
         if (!opt) return;
 
         auto& msg = *opt;
@@ -315,13 +308,13 @@ public:
                 ACLMessage agree = msg.createReply(ACLMessage::Performative::AGREE);
                 agree.setSender(AgentIdentifier{my_name_});
                 agree.setProtocol("fipa-subscribe");
-                acl_send(sender, agree);
+                this_agent->transport().send(sender, agree);
                 subscribers_[sender] = { msg.getConversationId() };
             } else {
                 ACLMessage refuse = msg.createReply(ACLMessage::Performative::REFUSE);
                 refuse.setSender(AgentIdentifier{my_name_});
                 refuse.setProtocol("fipa-subscribe");
-                acl_send(sender, refuse);
+                this_agent->transport().send(sender, refuse);
             }
 
         } else if (p == ACLMessage::Performative::CANCEL) {
@@ -332,7 +325,7 @@ public:
                 inf.setContent(last);
                 inf.setConversationId(msg.getConversationId());
                 inf.setProtocol("fipa-subscribe");
-                acl_send(sender, inf);
+                this_agent->transport().send(sender, inf);
             }
             subscribers_.erase(sender);
         }

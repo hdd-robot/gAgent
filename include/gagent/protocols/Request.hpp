@@ -59,17 +59,12 @@
 #define GAGENT_REQUEST_HPP_
 
 #include <gagent/core/Behaviour.hpp>
-#include <gagent/messaging/AclMQ.hpp>
 #include <gagent/messaging/ACLMessage.hpp>
 #include <gagent/messaging/AgentIdentifier.hpp>
 #include <string>
 
 namespace gagent {
 namespace protocols {
-
-using messaging::acl_send;
-using messaging::acl_receive;
-using messaging::acl_bind;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RequestInitiator
@@ -111,7 +106,7 @@ public:
     void onStart() override {
         // Pré-bind le socket PULL avant d'envoyer la requête,
         // pour ne pas perdre la réponse si le serveur répond très vite
-        acl_bind(my_name_);
+        this_agent->transport().bind(my_name_);
     }
 
     void action() override {
@@ -125,13 +120,13 @@ public:
             if (!ontology_.empty()) req.setOntology(ontology_);
             req.setProtocol("fipa-request");
 
-            acl_send(target_, req);
+            this_agent->transport().send(target_, req);
             state_ = WAIT_RESPONSE;
             break;
         }
 
         case WAIT_RESPONSE: {
-            auto opt = acl_receive(my_name_, timeout_ms_);
+            auto opt = this_agent->transport().receive(my_name_, timeout_ms_);
             if (!opt) {
                 handleTimeout();
                 done_ = true;
@@ -233,7 +228,7 @@ public:
     {}
 
     void action() override {
-        auto opt = acl_receive(my_name_, tick_ms_);
+        auto opt = this_agent->transport().receive(my_name_, tick_ms_);
         if (!opt) return;
         const ACLMessage& msg = *opt;
 
@@ -252,7 +247,7 @@ public:
         }
 
         const std::string& dest = response.getReceivers()[0].name;
-        acl_send(dest, response);
+        this_agent->transport().send(dest, response);
     }
 
     bool done() override { return false; }
