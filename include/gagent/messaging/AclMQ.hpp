@@ -34,6 +34,17 @@
 namespace gagent {
 namespace messaging {
 
+// ── Helper log erreurs ZMQ ────────────────────────────────────────────────────
+
+inline void zmq_log_error(const char* op, const std::string& detail = "")
+{
+    std::string msg = std::string("[AclMQ] ") + op
+                    + " failed: " + zmq_strerror(zmq_errno());
+    if (!detail.empty()) msg += " (" + detail + ")";
+    LOG_JSON("acl_error", {"op", op}, {"reason", zmq_strerror(zmq_errno())},
+             {"detail", detail});
+}
+
 // ── Endpoint local (IPC) ──────────────────────────────────────────────────────
 
 /**
@@ -87,7 +98,7 @@ public:
         }
 
         void* sock = zmq_socket(zmq_ctx(), ZMQ_PULL);
-        if (!sock) return nullptr;
+        if (!sock) { zmq_log_error("zmq_socket/PULL", name); return nullptr; }
 
         int linger = 0;
         zmq_setsockopt(sock, ZMQ_LINGER, &linger, sizeof(linger));
@@ -113,6 +124,7 @@ public:
                 }
             }
             if (!bound) {
+                zmq_log_error("zmq_bind/TCP", name);
                 zmq_close(sock);
                 return nullptr;
             }
@@ -208,7 +220,7 @@ private:
         }
 
         void* sock = zmq_socket(zmq_ctx(), ZMQ_PUSH);
-        if (!sock) return nullptr;
+        if (!sock) { zmq_log_error("zmq_socket/PUSH", to); return nullptr; }
 
         int linger = 2000;
         zmq_setsockopt(sock, ZMQ_LINGER, &linger, sizeof(linger));
@@ -217,6 +229,7 @@ private:
         zmq_setsockopt(sock, ZMQ_SNDTIMEO, &sndtmo, sizeof(sndtmo));
 
         if (zmq_connect(sock, ep.c_str()) != 0) {
+            zmq_log_error("zmq_connect", ep);
             zmq_close(sock);
             return nullptr;
         }

@@ -47,8 +47,6 @@
 #define SIG_AGENT_WAIT 		(__SIGRTMIN + 6)
 #define SIG_AGENT_TRANSIT 	(__SIGRTMIN + 7)
 
-#define SIG_AGENT_INFORM_PARENT 	(__SIGRTMIN + 7)
-
 namespace gagent {
 
 class Agent {
@@ -65,7 +63,6 @@ public:
 
 	void control_Thread();
 	void listener_extern_signals_Thread();
-	void control_message();
 
 	void init();
 	void _init(int);

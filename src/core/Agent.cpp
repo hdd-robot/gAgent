@@ -4,12 +4,15 @@
 #include <gagent/platform/PlatformConfig.hpp>
 #include <gagent/platform/DFClient.hpp>
 #include <gagent/utils/Logger.hpp>
+#include <gagent/utils/ErrorHandler.hpp>
 #include <gagent/messaging/AclMQ.hpp>
 #include <sys/wait.h>  // For waitpid()
 #include <unistd.h>    // For usleep()
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <cerrno>
+#include <cstring>
 
 #define BUFLEN 1024  				// Max length of buffer
 
@@ -30,7 +33,8 @@ void Agent::init() {
 
 	pid = fork();
 	if (pid == -1) {
-		std::cerr << "error fork" << std::endl;
+		throw gagent::InitializationException(
+		    std::string("fork() failed: ") + std::strerror(errno));
 	}
 	if (pid > 0) { // the boss
 
@@ -60,7 +64,6 @@ void Agent::_init(int dbg) {
 	this->agentStatus = AGENT_INITED;
 	std::thread(&Agent::listener_extern_signals_Thread, this).detach();
 	std::thread(&Agent::control_Thread, this).detach();
-	std::thread(&Agent::control_message, this).detach();
 
 
 	if (dbg > 0) {
@@ -76,12 +79,22 @@ void Agent::_init(int dbg) {
 		std::string name = agentId.getAgentName();
 		if (name.empty()) name = agentId.getAgentID();
 		gagent::platform::AMSClient ams;
-		if (ams.registerAgent(name, chldpid, get_msg_queue_name()))
+		if (ams.registerAgent(name, chldpid, get_msg_queue_name())) {
 			this->agentStatus = AGENT_ACTIVE;
-		LOG_JSON("agent_start",
-		    {"agent", name},
-		    {"pid",   std::to_string(chldpid)}
-		);
+			LOG_JSON("agent_start",
+			    {"agent", name},
+			    {"pid",   std::to_string(chldpid)},
+			    {"status", "active"}
+			);
+		} else {
+			// Mode dégradé : AMS non disponible, l'agent tourne sans enregistrement FIPA.
+			// Le routage inter-agents reste fonctionnel en mode local (IPC ZMQ).
+			LOG_JSON("agent_start",
+			    {"agent", name},
+			    {"pid",   std::to_string(chldpid)},
+			    {"status", "degraded_no_ams"}
+			);
+		}
 	}
 
 	this->setup();
@@ -297,37 +310,6 @@ std::string Agent::get_msg_queue_name() {
 	return "/" + aid;
 }
 
-void Agent::control_message() {
-
-	std::string mq_name = this->get_msg_queue_name();
-	mqd_t mq;
-
-	const int taille = 1000;
-	const int max_msg = 10;
-	std::vector<char> buffer(taille + 10);
-
-	struct mq_attr attr;
-	attr.mq_flags   = 0;
-	attr.mq_maxmsg  = max_msg;
-	attr.mq_msgsize = taille;
-	attr.mq_curmsgs = 0;
-
-	mq = mq_open(mq_name.c_str(), O_RDONLY | O_CREAT, 0666, &attr);
-
-	if (mq == (mqd_t)-1) {
-		perror("mq_open ");
-		std::cout << "Error create Message Queue " << std::endl;
-		this->sendMsgMonitor("Error create Message Queue");
-		return;
-	}
-
-	while (true) {
-		int err = mq_receive(mq, buffer.data(), taille, nullptr);
-		if (err < 0) {
-			perror("mq_receive ");
-		}
-	}
-}
 
 void Agent::addBehaviour(Behaviour* b) {
 	this->behaviourList.push_back(b);
