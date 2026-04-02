@@ -10,3 +10,5 @@ II — La communication
    request
    contract_net
    subscribe_notify
+   transport
+   tests_mock
