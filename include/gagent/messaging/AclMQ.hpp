@@ -305,7 +305,10 @@ inline std::optional<ACLMessage> acl_receive(const std::string& my_name,
 
         zmq_pollitem_t items[] = { { sock, 0, ZMQ_POLLIN, 0 } };
         int rc = zmq_poll(items, 1, tmo);
-        if (rc < 0) return std::nullopt;   // erreur ZMQ
+        if (rc < 0) {
+            if (zmq_errno() == EINTR) continue;  // signal reçu, retry
+            return std::nullopt;                  // erreur ZMQ réelle
+        }
         if (rc == 0) continue;             // sous-timeout → re-vérifier deadline
 
         // zmq_poll indique ZMQ_POLLIN : essayer de recevoir sans bloquer
