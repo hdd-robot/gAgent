@@ -86,7 +86,7 @@ void PythonBehaviour::action()
         return;
     }
 
-    auto opt = messaging::acl_receive(my_name_, tick_ms_);
+    auto opt = this_agent->transport().receive(my_name_, tick_ms_);
 
     if (opt) {
         send_event("{\"event\":\"message\",\"msg\":" + msg_to_json(*opt) + "}");
@@ -245,7 +245,7 @@ void PythonBehaviour::execute(const std::string& json_line)
         if (!conv_id.empty())  msg.setConversationId(conv_id);
         if (!reply_to.empty()) msg.setInReplyTo(reply_to);
 
-        messaging::acl_send(to, msg);
+        this_agent->transport().send(to, msg);
     }
 }
 
