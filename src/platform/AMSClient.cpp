@@ -73,7 +73,11 @@ std::string AMSClient::request(const std::string& cmd)
     if (fd < 0) return "";
 
     std::string msg = cmd + "\n";
-    ::write(fd, msg.c_str(), msg.size());
+    ssize_t written = ::write(fd, msg.c_str(), msg.size());
+    if (written < 0 || static_cast<size_t>(written) < msg.size()) {
+        ::close(fd);
+        return "";
+    }
     std::string response = readline_fd(fd);
     ::close(fd);
     return response;

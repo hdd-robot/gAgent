@@ -66,7 +66,8 @@ static void handle_migration(int cli_fd, AgentFactory& factory)
     ss >> cmd >> type_name >> agent_name >> attrs_str;
 
     if (cmd != "ARRIVE" || type_name.empty() || agent_name.empty()) {
-        ::write(cli_fd, "ERR bad format\n", 15);
+        const char* err = "ERR bad format\n";
+        (void)::write(cli_fd, err, std::strlen(err));
         ::close(cli_fd);
         return;
     }
@@ -74,7 +75,7 @@ static void handle_migration(int cli_fd, AgentFactory& factory)
     Agent* ag = factory.create(type_name);
     if (!ag) {
         std::string err = "ERR unknown type " + type_name + "\n";
-        ::write(cli_fd, err.c_str(), err.size());
+        (void)::write(cli_fd, err.c_str(), err.size());
         ::close(cli_fd);
         return;
     }
@@ -95,7 +96,7 @@ static void handle_migration(int cli_fd, AgentFactory& factory)
         }
     }
 
-    ::write(cli_fd, "OK\n", 3);
+    (void)::write(cli_fd, "OK\n", 3);
     ::close(cli_fd);
 
     LOG_JSON("agent_arrived",
