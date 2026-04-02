@@ -276,7 +276,7 @@ void Agent::control_Thread() {
 				ams.deregisterAgent(name);
 				gagent::platform::DFClient df;
 				df.deregisterAgent(name);
-				gagent::messaging::acl_flush();
+				transport_->flush();
 				_exit(0);
 			}
 			break;
@@ -466,7 +466,7 @@ int Agent::doAction(const int act) {
 			// Flush les sockets PUSH avant _exit pour que le linger ZMQ
 			// puisse livrer les derniers messages (sinon _exit ferme les fd
 			// sans attendre le linger).
-			gagent::messaging::acl_flush();
+			transport_->flush();
 			_exit(0);  // sortie propre du processus child
 		} else {
 			// Demande externe : envoie le signal au child
