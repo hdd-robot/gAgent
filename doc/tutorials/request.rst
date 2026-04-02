@@ -173,51 +173,72 @@ Cas avec AGREE — traitement long
 ----------------------------------
 
 Quand le traitement prend du temps, le participant peut envoyer un
-``AGREE`` immédiatement, puis envoyer l'``INFORM`` une fois le travail
-terminé. Cela se fait manuellement dans le behaviour du participant :
+``AGREE`` immédiatement pour confirmer la réception, puis envoyer
+l'``INFORM`` une fois le travail terminé (FIPA SC00026H §3.4).
+
+Il suffit de surcharger **deux méthodes** dans ``RequestParticipant`` :
+
+- ``prepareAgree()`` — retourner ``true`` pour déclencher l'envoi automatique du ``AGREE``
+- ``handleRequest()`` — votre traitement (peut bloquer, le ``AGREE`` est déjà parti)
 
 .. code-block:: cpp
 
-   class ServiceLent : public Behaviour {
-       enum class Etat { ATTENTE, TRAITEMENT } etat_ = Etat::ATTENTE;
-       ACLMessage demande_en_cours_;
+   class ServiceLent : public RequestParticipant {
    public:
-       ServiceLent(Agent* ag) : Behaviour(ag) {}
+       ServiceLent(Agent* ag)
+           : RequestParticipant(ag, "service-lent") {}
 
-       void onStart() override {
-           acl_bind("service-lent");
+       // Retourner true → AGREE envoyé automatiquement avant handleRequest()
+       bool prepareAgree(const ACLMessage& /*req*/) override {
+           return true;
        }
 
-       void action() override {
-           if (etat_ == Etat::ATTENTE) {
-               auto opt = acl_receive("service-lent", 500);
-               if (!opt || opt->getPerformative() != ACLMessage::Performative::REQUEST)
-                   return;
+       ACLMessage handleRequest(const ACLMessage& req) override {
+           // Le demandeur a déjà reçu AGREE — on peut prendre le temps nécessaire
+           std::this_thread::sleep_for(std::chrono::seconds(3));
 
-               demande_en_cours_ = *opt;
-
-               // Confirmer immédiatement
-               ACLMessage agree = demande_en_cours_.createReply(ACLMessage::Performative::AGREE);
-               agree.setSender(AgentIdentifier{"service-lent"});
-               acl_send(demande_en_cours_.getSender().name, agree);
-
-               etat_ = Etat::TRAITEMENT;
-
-           } else {
-               // Simuler un traitement long
-               sleep(3);
-
-               ACLMessage inform = demande_en_cours_.createReply(ACLMessage::Performative::INFORM);
-               inform.setSender(AgentIdentifier{"service-lent"});
-               inform.setContent("traitement terminé");
-               acl_send(demande_en_cours_.getSender().name, inform);
-
-               etat_ = Etat::ATTENTE;
-           }
+           ACLMessage rep = req.createReply(ACLMessage::Performative::INFORM);
+           rep.setSender(AgentIdentifier{"service-lent"});
+           rep.setContent("traitement terminé");
+           return rep;
        }
-
-       bool done() override { return false; }
    };
+
+Côté demandeur, ``handleAgree()`` est appelé dès réception du ``AGREE`` :
+
+.. code-block:: cpp
+
+   class MonClient : public RequestInitiator {
+   public:
+       MonClient(Agent* ag)
+           : RequestInitiator(ag, "client", "service-lent", "tâche-longue", "", 30000) {}
+
+       void handleAgree(const ACLMessage&) override {
+           std::cout << "[Client] Le service a accepté, résultat en cours...\n";
+       }
+
+       void handleInform(const ACLMessage& msg) override {
+           std::cout << "[Client] Résultat : " << msg.getContent() << "\n";
+       }
+   };
+
+Le flux complet est alors :
+
+.. code-block:: text
+
+   Client                    ServiceLent
+     │──── REQUEST ──────────────►│
+     │                            │  prepareAgree() retourne true
+     │◄─── AGREE ─────────────────│  "j'ai reçu, je travaille"
+     │                            │  handleRequest() s'exécute (3s)
+     │◄─── INFORM ────────────────│  "traitement terminé"
+
+.. note::
+
+   Si ``prepareAgree()`` n'est pas surchargée (ou retourne ``false``),
+   le comportement par défaut est **REQUEST → INFORM direct** — aucun
+   ``AGREE`` n'est envoyé. C'est le cas le plus fréquent pour les
+   traitements rapides.
 
 Exemple complet
 ----------------
@@ -328,3 +349,5 @@ Résumé
      - Côté initiateur — la demande a été refusée
    * - ``handleTimeout()``
      - Côté initiateur — pas de réponse dans le délai
+   * - ``prepareAgree()``
+     - Côté participant — retourner ``true`` pour envoyer ``AGREE`` avant le traitement

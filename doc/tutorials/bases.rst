@@ -8,3 +8,4 @@ I — Les bases
    premiers_pas
    structure_main
    behaviours
+   lifecycle
