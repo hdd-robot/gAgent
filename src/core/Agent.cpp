@@ -6,6 +6,7 @@
 #include <gagent/utils/Logger.hpp>
 #include <gagent/utils/ErrorHandler.hpp>
 #include <gagent/messaging/AclMQ.hpp>
+#include <gagent/messaging/ZmqTransport.hpp>
 #include <sys/wait.h>  // For waitpid()
 #include <unistd.h>    // For usleep()
 #include <sys/socket.h>
@@ -57,7 +58,16 @@ void Agent::init() {
 
 }
 
+messaging::ITransport& Agent::transport() { return *transport_; }
+
+void Agent::setTransport(std::shared_ptr<messaging::ITransport> t) {
+    transport_ = std::move(t);
+}
+
 void Agent::_init(int dbg) {
+
+	if (!transport_)
+		transport_ = std::make_shared<messaging::ZmqTransport>();
 
 	action_to_do = Agent::AGENT_UNKNOWN;
 

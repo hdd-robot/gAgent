@@ -71,7 +71,6 @@
 #include <gagent/core/Behaviour.hpp>
 #include <gagent/messaging/ACLMessage.hpp>
 #include <gagent/messaging/AgentIdentifier.hpp>
-#include <gagent/messaging/AclMQ.hpp>
 
 #include <string>
 #include <vector>
@@ -81,11 +80,6 @@
 
 namespace gagent {
 namespace protocols {
-
-using messaging::acl_send;
-using messaging::acl_receive;
-using messaging::acl_unlink;
-using messaging::acl_bind;
 
 // ── ContractNetInitiator ─────────────────────────────────────────────────────
 
@@ -130,7 +124,7 @@ public:
     // ── Behaviour interface ───────────────────────────────────────────────────
 
     void onStart() override {
-        acl_bind(my_name_);
+        this_agent->transport().bind(my_name_);
     }
 
     void action() override
@@ -147,7 +141,7 @@ public:
             cfp_.setProtocol("fipa-contract-net");
 
             for (auto& p : participants_) {
-                acl_send(p.name, cfp_);
+                this_agent->transport().send(p.name, cfp_);
             }
 
             deadline_ = std::chrono::steady_clock::now()
@@ -167,7 +161,7 @@ public:
                             deadline_ - now).count();
             int  tmo  = static_cast<int>(std::min<long long>(500, left));
 
-            auto opt = acl_receive(my_name_, tmo);
+            auto opt = this_agent->transport().receive(my_name_, tmo);
             if (!opt) break;
 
             auto& msg = *opt;
@@ -198,12 +192,12 @@ public:
                 if (accept_set.count(pname)) {
                     ACLMessage acc = prop.createReply(ACLMessage::Performative::ACCEPT_PROPOSAL);
                     acc.setSender(AgentIdentifier{my_name_});
-                    acl_send(pname, acc);
+                    this_agent->transport().send(pname, acc);
                     accepted_.push_back(pname);
                 } else {
                     ACLMessage rej = prop.createReply(ACLMessage::Performative::REJECT_PROPOSAL);
                     rej.setSender(AgentIdentifier{my_name_});
-                    acl_send(pname, rej);
+                    this_agent->transport().send(pname, rej);
                 }
             }
 
@@ -228,7 +222,7 @@ public:
                             result_deadline_ - now).count();
             int  tmo  = static_cast<int>(std::min<long long>(500, left));
 
-            auto opt = acl_receive(my_name_, tmo);
+            auto opt = this_agent->transport().receive(my_name_, tmo);
             if (!opt) break;
 
             auto& msg = *opt;
@@ -319,7 +313,7 @@ public:
     void onStart() override {
         // Pré-bind avant que l'initiateur envoie le CFP,
         // pour éviter de perdre le message (ZMQ PUSH drop si pas de peer)
-        acl_bind(my_name_);
+        this_agent->transport().bind(my_name_);
     }
 
     void action() override
@@ -327,7 +321,7 @@ public:
         switch (state_) {
 
         case State::WAIT_CFP: {
-            auto opt = acl_receive(my_name_, timeout_ms_);
+            auto opt = this_agent->transport().receive(my_name_, timeout_ms_);
             if (!opt) { done_ = true; break; }  // timeout global → terminé
 
             auto& msg = *opt;
@@ -336,7 +330,7 @@ public:
                 resp.setSender(AgentIdentifier{my_name_});
                 resp.setConversationId(msg.getConversationId());
                 resp.setInReplyTo(msg.getReplyWith());
-                acl_send(msg.getSender().name, resp);
+                this_agent->transport().send(msg.getSender().name, resp);
 
                 if (resp.getPerformative() == ACLMessage::Performative::REFUSE) {
                     done_ = true;   // refus → protocole terminé pour ce participant
@@ -350,7 +344,7 @@ public:
         }
 
         case State::WAIT_DECISION: {
-            auto opt = acl_receive(my_name_, timeout_ms_);
+            auto opt = this_agent->transport().receive(my_name_, timeout_ms_);
             if (!opt) { done_ = true; break; }  // timeout → abandon
 
             auto& msg = *opt;
@@ -362,7 +356,7 @@ public:
                 result.setSender(AgentIdentifier{my_name_});
                 result.setConversationId(conv_id_);
                 result.setInReplyTo(msg.getReplyWith());
-                acl_send(initiator_, result);
+                this_agent->transport().send(initiator_, result);
                 done_ = true;
             } else if (p == ACLMessage::Performative::REJECT_PROPOSAL) {
                 done_ = true;
