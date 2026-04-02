@@ -146,8 +146,9 @@ public:
             cfp_.setReplyWith("cfp-" + conv_id_);
             cfp_.setProtocol("fipa-contract-net");
 
-            for (auto& p : participants_)
+            for (auto& p : participants_) {
                 acl_send(p.name, cfp_);
+            }
 
             deadline_ = std::chrono::steady_clock::now()
                       + std::chrono::milliseconds(proposal_timeout_ms_);
@@ -314,6 +315,12 @@ public:
     virtual ACLMessage executeTask(const ACLMessage& accept) = 0;
 
     // ── Behaviour interface ───────────────────────────────────────────────────
+
+    void onStart() override {
+        // Pré-bind avant que l'initiateur envoie le CFP,
+        // pour éviter de perdre le message (ZMQ PUSH drop si pas de peer)
+        acl_bind(my_name_);
+    }
 
     void action() override
     {
