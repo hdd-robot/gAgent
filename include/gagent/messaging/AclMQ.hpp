@@ -28,6 +28,7 @@
 #include <functional>
 #include <cstdlib>
 #include <cctype>
+#include <chrono>
 #include <unistd.h>
 
 namespace gagent {
@@ -53,29 +54,16 @@ inline std::string acl_endpoint_ipc(const std::string& name)
 }
 
 // ── Contexte ZMQ (un par processus, lazy init) ────────────────────────────────
+// Défini dans AclMQ.cpp (libgagent.so) pour éviter d'avoir un contexte
+// différent dans la bibliothèque et dans le binaire appelant.
 
-inline void* zmq_ctx()
-{
-    static void*  ctx     = nullptr;
-    static pid_t  ctx_pid = 0;
-
-    pid_t cur = ::getpid();
-    if (ctx_pid != cur) {
-        if (ctx) zmq_ctx_destroy(ctx);
-        ctx     = zmq_ctx_new();
-        ctx_pid = cur;
-    }
-    return ctx;
-}
+void* zmq_ctx();
 
 // ── Cache des sockets PULL ────────────────────────────────────────────────────
 
 class PullCache {
 public:
-    static PullCache& instance() {
-        static PullCache inst;
-        return inst;
-    }
+    static PullCache& instance(); // défini dans AclMQ.cpp
 
     /**
      * Retourne le socket PULL pour cet agent (crée + bind si 1ère fois).
@@ -174,10 +162,7 @@ private:
 
 class PushCache {
 public:
-    static PushCache& instance() {
-        static PushCache inst;
-        return inst;
-    }
+    static PushCache& instance(); // défini dans AclMQ.cpp
 
     bool send(const std::string& to, const char* data, size_t len) {
         std::lock_guard<std::mutex> lock(mtx_);
@@ -305,33 +290,50 @@ inline std::optional<ACLMessage> acl_receive(const std::string& my_name,
     void* sock = PullCache::instance().get(my_name);
     if (!sock) return std::nullopt;
 
-    zmq_pollitem_t items[] = { { sock, 0, ZMQ_POLLIN, 0 } };
-    int rc = zmq_poll(items, 1, timeout_ms);
-    if (rc <= 0) return std::nullopt;
+    // Boucle pour ignorer les réveils spurieux de zmq_poll (ex: handshake ZMTP
+    // lors de la connexion d'un PUSH) et attendre la durée effective demandée.
+    auto deadline = std::chrono::steady_clock::now()
+                  + std::chrono::milliseconds(timeout_ms);
 
-    zmq_msg_t zmsg;
-    zmq_msg_init(&zmsg);
-    int n = zmq_msg_recv(&zmsg, sock, 0);
-    if (n < 0) {
+    while (true) {
+        auto now  = std::chrono::steady_clock::now();
+        if (now >= deadline) return std::nullopt;
+
+        long long left = std::chrono::duration_cast<std::chrono::milliseconds>(
+                             deadline - now).count();
+        long long tmo  = std::min<long long>(500, left);
+
+        zmq_pollitem_t items[] = { { sock, 0, ZMQ_POLLIN, 0 } };
+        int rc = zmq_poll(items, 1, tmo);
+        if (rc < 0) return std::nullopt;   // erreur ZMQ
+        if (rc == 0) continue;             // sous-timeout → re-vérifier deadline
+
+        // zmq_poll indique ZMQ_POLLIN : essayer de recevoir sans bloquer
+        zmq_msg_t zmsg;
+        zmq_msg_init(&zmsg);
+        int n = zmq_msg_recv(&zmsg, sock, ZMQ_DONTWAIT);
+        if (n < 0) {
+            zmq_msg_close(&zmsg);
+            if (zmq_errno() == EAGAIN) continue;  // réveil spurieux, retry
+            return std::nullopt;                   // erreur réelle
+        }
+
+        std::string raw(static_cast<char*>(zmq_msg_data(&zmsg)),
+                        zmq_msg_size(&zmsg));
         zmq_msg_close(&zmsg);
-        return std::nullopt;
-    }
 
-    std::string raw(static_cast<char*>(zmq_msg_data(&zmsg)),
-                    zmq_msg_size(&zmsg));
-    zmq_msg_close(&zmsg);
-
-    auto result = ACLMessage::parse(raw);
-    if (result) {
-        LOG_JSON("acl_recv",
-            {"to",      my_name},
-            {"from",    result->getSender().name},
-            {"perf",    ACLMessage::performativeToString(result->getPerformative())},
-            {"conv",    result->getConversationId()},
-            {"content", result->getContent().substr(0, 120)}
-        );
+        auto result = ACLMessage::parse(raw);
+        if (result) {
+            LOG_JSON("acl_recv",
+                {"to",      my_name},
+                {"from",    result->getSender().name},
+                {"perf",    ACLMessage::performativeToString(result->getPerformative())},
+                {"conv",    result->getConversationId()},
+                {"content", result->getContent().substr(0, 120)}
+            );
+        }
+        return result;
     }
-    return result;
 }
 
 /**

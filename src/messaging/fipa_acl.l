@@ -88,7 +88,7 @@ using tok = gagent::FipaAclParser;
     return tok::make_STRING(result, driver.loc);
 }
 
-[a-zA-Z][a-zA-Z0-9_\-\.@:/]* {
+[a-zA-Z0-9][a-zA-Z0-9_\-\.@:/]* {
     return tok::make_WORD(std::string(yytext), driver.loc);
 }
 

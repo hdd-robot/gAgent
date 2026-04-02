@@ -31,6 +31,7 @@ set(SRCS
     core/DFAgentDescription.cpp
     core/DFService.cpp
     messaging/ACLMessage.cpp
+    messaging/AclMQ.cpp
     messaging/FipaAclDriver.cpp
     env/Environnement.cpp
     env/VisualAgent.cpp
