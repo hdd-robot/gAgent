@@ -2,7 +2,7 @@
 
 [![C++17](https://img.shields.io/badge/C++-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
 [![FIPA](https://img.shields.io/badge/FIPA-ACL-orange.svg)](http://www.fipa.org)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **gAgent** est une plateforme multi-agent C++17 conforme au standard **FIPA ACL**,
 conçue pour la **planification neuro-symbolique** : combiner des agents symboliques
