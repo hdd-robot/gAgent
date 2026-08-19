@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`OneShotBehaviour` — `action()` n'était jamais exécutée.** L'ordonnanceur
+  (`Agent::exthread`) testait `done()` *avant* d'appeler `action()` ; comme
+  `OneShotBehaviour::done()` retourne `true`, le behaviour était inerte alors
+  qu'il est documenté dans quatre tutoriels. La boucle est désormais
+  `do { action(); } while (!done())` : tout behaviour s'exécute au moins une
+  fois, ce qui correspond déjà à l'ordre utilisé par `SequentialBehaviour`
+  et `FSMBehaviour` pour leurs sous-behaviours.
+
+- **`ParallelBehaviour`** — même inversion `done()`/`action()` sur les enfants :
+  un `OneShotBehaviour` enfant n'était jamais exécuté. Les enfants terminés sont
+  maintenant suivis explicitement, `onEnd()` n'est appelé qu'une seule fois par
+  enfant, et `done()` s'appuie sur cet état.
+
+- **`Agent::getAttribut()`** — retournait systématiquement une chaîne vide sans
+  consulter la table des attributs. Retourne maintenant la valeur posée par
+  `setAttribut()` (chaîne vide si l'attribut n'existe pas).
+
+- **`Agent::removeBehaviour()`** — déclarée dans `Agent.hpp` mais jamais définie :
+  toute utilisation provoquait une erreur de link. Implémentée dans `Agent.cpp`
+  (retrait de la liste d'exécution ; à appeler avant `init()`).
+
+- **`WakerBehaviour`** — garde sur un timer déjà à zéro (le décrément d'un
+  `unsigned int` nul repartait à `UINT_MAX`).
+
+### Added
+
+- **`test_behaviours`** — 13 assertions couvrant l'exécution unique de
+  `OneShotBehaviour` via l'ordonnanceur, `removeBehaviour()`, le cycle
+  `addAttribut`/`setAttribut`/`getAttribut`, et les composites
+  `ParallelBehaviour` / `SequentialBehaviour` avec enfants `OneShot`.
+
+---
+
 ## [1.0.0] - 2026-04-02
 
 ### Added

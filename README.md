@@ -352,6 +352,7 @@ cd build && ctest --output-on-failure
 | `test_subscribe_notify` | Intégration ZMQ | ~16s |
 | `test_concurrent_send` | Intégration ZMQ | ~0.1s |
 | `test_mock_transport` | **Unitaire MockTransport** | **~0.01s** |
+| `test_behaviours` | Cycle de vie des behaviours | ~0.02s |
 
 ---
 

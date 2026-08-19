@@ -182,6 +182,8 @@ public:
 
 private:
 	WhenDone when_;
+	// Enfants dont onEnd() a déjà été appelé (ils ne sont plus exécutés).
+	std::vector<bool> ended_;
 };
 
 // ── FSMBehaviour ──────────────────────────────────────────────────────────────

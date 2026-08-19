@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <cerrno>
 #include <cstring>
+#include <algorithm>
 
 #define BUFLEN 1024  				// Max length of buffer
 
@@ -123,14 +124,18 @@ void Agent::_init(int dbg) {
 
 void Agent::exthread(Behaviour* beh) {
 
+	// action() puis done() : un behaviour est exécuté au moins une fois.
+	// Tester done() en premier rendrait OneShotBehaviour (done() == true)
+	// définitivement inerte. C'est aussi l'ordre utilisé par
+	// SequentialBehaviour et FSMBehaviour pour leurs sous-behaviours.
 	beh->onStart();
-	while (!beh->done()) {
+	do {
 		{
 			std::unique_lock<std::mutex> lck(mtxInterThred);
 			cvInterThred.wait(lck, [this]{ return runingThred; });
 		}
 		beh->action();
-	}
+	} while (!beh->done());
 	beh->onEnd();
 
 }
@@ -323,6 +328,15 @@ std::string Agent::get_msg_queue_name() {
 
 void Agent::addBehaviour(Behaviour* b) {
 	this->behaviourList.push_back(b);
+}
+
+// Retire un behaviour de la liste d'exécution.
+// À appeler avant init() : une fois les threads démarrés, le behaviour
+// retiré continue de tourner jusqu'à ce que son done() retourne true.
+void Agent::removeBehaviour(Behaviour* b) {
+	auto it = std::find(behaviourList.begin(), behaviourList.end(), b);
+	if (it != behaviourList.end())
+		behaviourList.erase(it);
 }
 
 void Agent::takeDown() {
@@ -565,8 +579,10 @@ void Agent::setAttribut(std::string attr, std::string val) {
 }
 
 std::string Agent::getAttribut(std::string attr) {
-
-	return "";
+	auto it = this->attributs.find(attr);
+	if (it == this->attributs.end())
+		return "";
+	return it->second;
 }
 
 }

@@ -138,6 +138,7 @@ WakerBehaviour::WakerBehaviour(Agent* ag,unsigned int timer) : SimpleBehaviour(a
 }
 
 void WakerBehaviour::action() {
+	if (this->internalTimer == 0) return;   // évite le wrap-around sur unsigned
 	this->internalTimer = this->internalTimer - 1;
 	std::chrono::duration<double, std::milli> timeToWait(1.0);
 	std::chrono::duration<double, std::milli> elapsed;
@@ -268,28 +269,38 @@ ParallelBehaviour::ParallelBehaviour(Agent* ag, WhenDone when)
 ParallelBehaviour::~ParallelBehaviour() {}
 
 void ParallelBehaviour::onStart() {
+	ended_.assign(children_.size(), false);
 	for (auto* b : children_) b->onStart();
 }
 
 void ParallelBehaviour::action() {
-	for (auto* b : children_) {
-		if (!b->done()) {
-			b->action();
-			if (b->done())
-				b->onEnd();
+	// action() puis done() : sans cet ordre, un OneShotBehaviour enfant
+	// (done() == true dès le départ) ne serait jamais exécuté.
+	if (ended_.size() != children_.size())
+		ended_.resize(children_.size(), false);
+
+	for (std::size_t i = 0; i < children_.size(); ++i) {
+		if (ended_[i]) continue;
+		children_[i]->action();
+		if (children_[i]->done()) {
+			children_[i]->onEnd();
+			ended_[i] = true;
 		}
 	}
 }
 
 bool ParallelBehaviour::done() {
+	if (children_.empty()) return true;
+	if (ended_.size() != children_.size()) return false;  // pas encore démarré
+
 	if (when_ == WhenDone::ANY) {
-		for (auto* b : children_)
-			if (b->done()) return true;
-		return children_.empty();
+		for (bool e : ended_)
+			if (e) return true;
+		return false;
 	}
 	// WhenDone::ALL
-	for (auto* b : children_)
-		if (!b->done()) return false;
+	for (bool e : ended_)
+		if (!e) return false;
 	return true;
 }
 
