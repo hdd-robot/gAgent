@@ -217,6 +217,10 @@ Ouvrez les ports suivants entre toutes les machines :
    * - 40015
      - TCP
      - Serveur de contrôle esclave (depuis agentmanager)
+   * - 40016
+     - TCP
+     - Serveur de migration d'agents — uniquement si le programme appelle
+       ``AgentFactory::startMigrationServer()``
    * - 50000–64999
      - TCP
      - Endpoints ZMQ agents (bidirectionnel entre toutes les machines)
@@ -226,3 +230,83 @@ Ouvrez les ports suivants entre toutes les machines :
    # Vérifier la connectivité avant de démarrer
    nc -zv 192.168.1.10 40011   # accès au master AMS
    nc -zv 192.168.1.20 40015   # accès au contrôle esclave
+
+
+Modèle de menace
+----------------
+
+.. warning::
+
+   Le mode cluster n'authentifie rien. Il est conçu pour un **réseau de
+   confiance** : LAN privé, VPN (WireGuard, OpenVPN) ou pare-feu restreignant
+   les ports ci-dessus aux seules IP des nœuds. Ne l'exposez pas sur Internet
+   ni sur un réseau partagé avec des machines tierces.
+
+En mode local (par défaut), l'AMS et le DF passent par des sockets Unix dans
+``/tmp`` : l'accès est limité aux utilisateurs de la machine, comme pour
+n'importe quel fichier. Le mode ``--master`` bascule ces mêmes services sur TCP,
+en écoute sur toutes les interfaces, sans mot de passe ni chiffrement.
+
+Ce qu'un tiers ayant accès au réseau peut faire, sans authentification :
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Surface
+     - Conséquence
+   * - AMS TCP (40011)
+     - ``REGISTER_ENDPOINT bob 0 tcp://pirate:5555`` détourne **tous les
+       messages destinés à bob** vers une autre machine. Le détournement est
+       silencieux : l'agent légitime continue de tourner, ses messages partent
+       ailleurs sans erreur. ``DEREGISTER bob`` coupe l'agent de la plateforme.
+   * - DF TCP (40012)
+     - Publier de faux services, désenregistrer les vrais, fausser les
+       résultats de recherche des agents.
+   * - Migration (40016)
+     - ``ARRIVE <type> <nom> <attrs>`` fait **instancier des agents** sur le
+       nœud, autant de fois que demandé. Les types créables se limitent à ceux
+       enregistrés via ``AgentFactory::registerType()``, mais aucune limite de
+       nombre n'est appliquée.
+   * - Endpoints ZMQ (50000+)
+     - Les sockets PULL acceptent n'importe quelle connexion PUSH : injection
+       de messages ACL arbitraires dans n'importe quel agent, avec un champ
+       ``:sender`` librement choisi.
+
+Le champ ``:sender`` d'un message ACL est déclaratif : rien ne garantit qu'un
+message vienne de l'agent qu'il désigne. Un behaviour ne doit donc pas accorder
+de privilège sur la seule foi de ce champ dans un déploiement multi-machine.
+
+Recommandations de déploiement
+------------------------------
+
+1. **Isoler le cluster.** VPN entre les nœuds, ou pare-feu n'autorisant les
+   ports 40011, 40012, 40015, 40016 et 50000–64999 que depuis les IP des
+   autres nœuds :
+
+   .. code-block:: bash
+
+      # Sur chaque nœud — n'autoriser que les pairs du cluster
+      sudo ufw default deny incoming
+      sudo ufw allow from 192.168.1.10 to any port 40011:40016 proto tcp
+      sudo ufw allow from 192.168.1.10 to any port 50000:64999 proto tcp
+      sudo ufw allow from 192.168.1.20 to any port 40011:40016 proto tcp
+      sudo ufw allow from 192.168.1.20 to any port 50000:64999 proto tcp
+
+2. **Ne démarrer le serveur de migration que si la migration est utilisée.**
+   Il est désactivé par défaut : il ne s'ouvre que sur appel explicite à
+   ``AgentFactory::startMigrationServer()``.
+
+3. **Ne pas exposer** ``agentview`` **sur une interface publique.** Il écoute
+   sur ``0.0.0.0:8080`` et publie sans authentification la liste des agents et
+   leurs endpoints. Le placer derrière un reverse proxy authentifié, ou le
+   restreindre à ``localhost`` (tunnel SSH depuis le poste de supervision).
+
+4. **Ne pas faire transiter de données sensibles** dans le champ ``:content``
+   des messages ACL : ils circulent en clair sur le réseau.
+
+Ces limites sont assumées : gAgent est une plateforme de recherche. Si le
+déploiement impose un réseau non fiable, il faut ajouter une couche
+d'authentification — secret partagé sur les commandes AMS/DF/migration a
+minima, ZMQ CURVE pour le plan de données — ou faire porter la sécurité par le
+réseau (VPN), ce qui reste l'option la plus simple et la plus sûre.

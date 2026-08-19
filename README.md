@@ -335,6 +335,39 @@ tail -f gagent.jsonl | jq .
 
 ---
 
+## Sécurité — mode cluster
+
+> **Le mode cluster n'authentifie rien.** Il suppose un **réseau de confiance** :
+> LAN privé, VPN (WireGuard…) ou pare-feu restreignant les ports aux seules IP
+> des nœuds. Ne l'exposez pas sur Internet.
+
+En mode local (par défaut), AMS et DF passent par des sockets Unix dans `/tmp` —
+accès limité aux utilisateurs de la machine. Le mode `--master` bascule ces
+services sur TCP, en écoute sur toutes les interfaces, sans mot de passe ni
+chiffrement. Un tiers ayant accès au réseau peut alors :
+
+| Surface | Conséquence |
+|---|---|
+| AMS TCP (40011) | `REGISTER_ENDPOINT bob 0 tcp://pirate:5555` détourne silencieusement **tous les messages destinés à `bob`** ; `DEREGISTER bob` coupe l'agent |
+| DF TCP (40012) | Publier de faux services, désenregistrer les vrais |
+| Migration (40016) | `ARRIVE <type> <nom>` fait **instancier des agents** sur le nœud (types enregistrés via `registerType()`, sans limite de nombre) |
+| Endpoints ZMQ (50000+) | Injecter des messages ACL arbitraires dans n'importe quel agent, avec un `:sender` librement choisi |
+
+Le champ `:sender` d'un message ACL est déclaratif : ne fondez aucun privilège
+dessus en déploiement multi-machine.
+
+**Recommandations** — isoler le cluster (VPN ou pare-feu par IP) ; ne démarrer
+`AgentFactory::startMigrationServer()` que si la migration est utilisée (il est
+désactivé par défaut) ; ne pas exposer `agentview` (`0.0.0.0:8080`, sans
+authentification) hors de `localhost` ; ne pas faire transiter de données
+sensibles dans le champ `:content`, qui circule en clair.
+
+Ces limites sont assumées — gAgent est une plateforme de recherche. Détail
+complet et exemples de règles pare-feu : `doc/tutorials/platform_multihost.rst`,
+section « Modèle de menace ».
+
+---
+
 ## Tests
 
 ```bash

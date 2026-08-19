@@ -96,6 +96,15 @@ Dans le ``main()`` de **chaque machine** participante :
        return 0;
    }
 
+.. warning::
+
+   Le serveur de migration écoute sur toutes les interfaces
+   (``0.0.0.0:40016``) et n'authentifie pas ses clients : toute machine
+   capable de joindre ce port peut faire instancier sur ce nœud n'importe
+   quel type enregistré via ``registerType()``, autant de fois qu'elle le
+   souhaite. Ne le démarrez que sur un réseau de confiance — voir
+   :doc:`platform_multihost`, section « Modèle de menace ».
+
 ----
 
 Étape 3 — Déclencher la migration depuis un behaviour
