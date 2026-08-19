@@ -157,6 +157,13 @@ public:
             if (!opt) break;
 
             auto& msg = *opt;
+            // Message d'une autre conversation : il est écarté ici, et comme
+            // il est déjà sorti de la file, il est perdu pour les autres
+            // behaviours de l'agent. Sans effet si l'agent ne mène qu'une
+            // conversation à la fois sous ce nom ; pour un agent
+            // multi-protocoles, voir la limitation documentée dans
+            // doc/tutorials/envoi_reception.rst (contournement : un nom de
+            // file par protocole).
             if (msg.getConversationId() != conv_id_) break;
 
             auto p = msg.getPerformative();

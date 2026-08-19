@@ -133,6 +133,13 @@ public:
                 break;
             }
             const ACLMessage& msg = *opt;
+            // Message d'une autre conversation : il est écarté ici, et comme
+            // il est déjà sorti de la file, il est perdu pour les autres
+            // behaviours de l'agent. Sans effet si l'agent ne mène qu'une
+            // conversation à la fois sous ce nom ; pour un agent
+            // multi-protocoles, voir la limitation documentée dans
+            // doc/tutorials/envoi_reception.rst (contournement : un nom de
+            // file par protocole).
             if (msg.getConversationId() != conv_id_) break; // pas pour nous
 
             switch (msg.getPerformative()) {
@@ -236,6 +243,9 @@ public:
         if (!opt) return;
         const ACLMessage& msg = *opt;
 
+        // Idem : un message qui n'est pas une REQUEST est consommé puis
+        // abandonné — un CFP destiné à un ContractNetParticipant du même
+        // agent serait perdu ici. Voir doc/tutorials/envoi_reception.rst.
         if (msg.getPerformative() != ACLMessage::Performative::REQUEST) return;
 
         const std::string dest = msg.getSender().name;

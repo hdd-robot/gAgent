@@ -111,6 +111,59 @@ millisecondes.
 - **Un message** si quelque chose est arrivé avant le timeout
 - **Vide** (``nullopt``) si le délai est écoulé sans message
 
+Limitation — une seule file par nom d'agent
+--------------------------------------------
+
+.. warning::
+
+   ``acl_bind("bob")`` ouvre **une seule** file de réception pour le nom
+   ``bob``. Tous les behaviours de l'agent qui appellent
+   ``acl_receive("bob", …)`` puisent dans cette même file, et **le premier
+   thread réveillé emporte le message**, qu'il le concerne ou non. S'il ne le
+   concerne pas, il l'écarte — et le message est perdu, car rien ne le remet
+   dans la file.
+
+Tant qu'un agent ne mène qu'une conversation à la fois, le comportement est
+correct. Le problème apparaît avec un agent **multi-protocoles**. Exemple :
+``bob`` est à la fois ``RequestParticipant`` (il attend des REQUEST) et
+``ContractNetParticipant`` (il attend des CFP), les deux liés au nom ``bob``,
+chacun dans son thread. Un CFP arrive :
+
+1. Les deux threads attendent sur la même file.
+2. Le thread Request se réveille le premier et récupère le CFP.
+3. La performative n'est pas REQUEST, il abandonne le message
+   (``Request.hpp``, ``RequestParticipant::action()``).
+4. Le behaviour Contract Net ne verra jamais ce CFP.
+
+Les protocoles filtrent de la même façon sur l'identifiant de conversation :
+un message dont le ``conversation-id`` ne correspond pas est écarté, avec le
+commentaire « pas pour nous » (``Request.hpp:136``, ``ContractNet.hpp:168``,
+``SubscribeNotify.hpp:160``…). Le filtrage est correct du point de vue du
+protocole, mais le message est déjà sorti de la file.
+
+**Contournement** — donner un nom distinct à chaque protocole hébergé par
+l'agent :
+
+.. code-block:: cpp
+
+   void setup() override {
+       addBehaviour(new MonServeurRequest(this, "bob-req"));   // file « bob-req »
+       addBehaviour(new MonParticipantCNP(this, "bob-cnp"));   // file « bob-cnp »
+   }
+
+Chaque behaviour possède alors sa propre file et plus rien n'est perdu. En
+contrepartie, l'agent expose plusieurs noms, ce qui s'écarte du principe FIPA
+« un agent = un nom » : les interlocuteurs doivent savoir à quel alias écrire.
+
+.. note::
+
+   La correction de fond consiste à introduire une boîte aux lettres au niveau
+   de l'agent : un lecteur unique draine la file, et les behaviours réclament
+   les messages **correspondant à un critère** (conversation-id, performative,
+   protocole, expéditeur) — l'équivalent du ``MessageTemplate`` de JADE. Ce qui
+   ne correspond pas reste en boîte pour un autre behaviour. Ce chantier n'est
+   pas engagé : il modifie l'API publique de réception.
+
 Lire le contenu d'un message reçu
 -----------------------------------
 

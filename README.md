@@ -335,6 +335,37 @@ tail -f gagent.jsonl | jq .
 
 ---
 
+## Limitation connue — agents multi-protocoles
+
+Un nom d'agent correspond à **une seule file de réception**. Tous les behaviours
+qui lisent sous ce nom y puisent, et le premier thread réveillé emporte le
+message : s'il ne le concerne pas, il l'écarte et le message est perdu — rien ne
+le remet dans la file.
+
+Sans conséquence pour un agent qui mène une conversation à la fois. En revanche,
+un agent qui héberge **deux protocoles simultanément** sous le même nom (par ex.
+`RequestParticipant` + `ContractNetParticipant`) perd des messages : le behaviour
+Request peut consommer un CFP, constater que la performative ne le concerne pas,
+et l'abandonner avant que le behaviour Contract Net ne le voie.
+
+**Contournement** — un nom par protocole :
+
+```cpp
+void setup() override {
+    addBehaviour(new MonServeurRequest(this, "bob-req"));
+    addBehaviour(new MonParticipantCNP(this, "bob-cnp"));
+}
+```
+
+Chaque behaviour a alors sa propre file. En contrepartie l'agent expose plusieurs
+noms, ce qui s'écarte du principe FIPA « un agent = un nom ».
+
+La correction de fond — une boîte aux lettres par agent avec sélection par
+critère, à la manière du `MessageTemplate` de JADE — n'est pas engagée : elle
+modifie l'API publique de réception. Détail : `doc/tutorials/envoi_reception.rst`.
+
+---
+
 ## Sécurité — mode cluster
 
 > **Le mode cluster n'authentifie rien.** Il suppose un **réseau de confiance** :
