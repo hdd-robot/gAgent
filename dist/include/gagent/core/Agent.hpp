@@ -35,6 +35,7 @@
 
 #include <memory>
 #include <gagent/utils/udp_client_server.hpp>
+#include <gagent/messaging/ITransport.hpp>
 #include "Behaviour.hpp"
 #include "AgentID.hpp"
 
@@ -46,8 +47,6 @@
 #define SIG_AGENT_WAKE 		(__SIGRTMIN + 5)
 #define SIG_AGENT_WAIT 		(__SIGRTMIN + 6)
 #define SIG_AGENT_TRANSIT 	(__SIGRTMIN + 7)
-
-#define SIG_AGENT_INFORM_PARENT 	(__SIGRTMIN + 7)
 
 namespace gagent {
 
@@ -65,7 +64,6 @@ public:
 
 	void control_Thread();
 	void listener_extern_signals_Thread();
-	void control_message();
 
 	void init();
 	void _init(int);
@@ -104,6 +102,11 @@ public:
 
 	AgentID getAgentId() const;
 
+	// Transport de messagerie FIPA — injecté à l'init, ZmqTransport par défaut.
+	// Remplacer via setTransport() avant setup() pour changer de transport.
+	messaging::ITransport& transport();
+	void setTransport(std::shared_ptr<messaging::ITransport> t);
+
 	int agentStatus;
 	static const int AGENT_UNKNOWN 	= 0;	// Agent not created yet
 	static const int AGENT_CREATED 	= 1;	// Agnet created
@@ -136,6 +139,7 @@ public:
 
 private:
 
+	std::shared_ptr<messaging::ITransport> transport_;
 	MigrationTarget migration_target_;
 
 	std::map<std::string,std::string> attributs;

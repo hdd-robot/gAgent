@@ -59,17 +59,12 @@
 #define GAGENT_REQUEST_HPP_
 
 #include <gagent/core/Behaviour.hpp>
-#include <gagent/messaging/AclMQ.hpp>
 #include <gagent/messaging/ACLMessage.hpp>
 #include <gagent/messaging/AgentIdentifier.hpp>
 #include <string>
 
 namespace gagent {
 namespace protocols {
-
-using messaging::acl_send;
-using messaging::acl_receive;
-using messaging::acl_bind;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RequestInitiator
@@ -111,7 +106,7 @@ public:
     void onStart() override {
         // Pré-bind le socket PULL avant d'envoyer la requête,
         // pour ne pas perdre la réponse si le serveur répond très vite
-        acl_bind(my_name_);
+        this_agent->transport().bind(my_name_);
     }
 
     void action() override {
@@ -125,13 +120,13 @@ public:
             if (!ontology_.empty()) req.setOntology(ontology_);
             req.setProtocol("fipa-request");
 
-            acl_send(target_, req);
+            this_agent->transport().send(target_, req);
             state_ = WAIT_RESPONSE;
             break;
         }
 
         case WAIT_RESPONSE: {
-            auto opt = acl_receive(my_name_, timeout_ms_);
+            auto opt = this_agent->transport().receive(my_name_, timeout_ms_);
             if (!opt) {
                 handleTimeout();
                 done_ = true;
@@ -232,14 +227,29 @@ public:
         , tick_ms_(tick_ms)
     {}
 
+    void onStart() override {
+        this_agent->transport().bind(my_name_);
+    }
+
     void action() override {
-        auto opt = acl_receive(my_name_, tick_ms_);
+        auto opt = this_agent->transport().receive(my_name_, tick_ms_);
         if (!opt) return;
         const ACLMessage& msg = *opt;
 
         if (msg.getPerformative() != ACLMessage::Performative::REQUEST) return;
 
+        const std::string dest = msg.getSender().name;
+
+        // FIPA SC00026H §3.4 : si le traitement est long, envoyer AGREE d'abord.
+        // L'initiateur recevra AGREE puis INFORM/REFUSE/FAILURE plus tard.
+        if (prepareAgree(msg)) {
+            ACLMessage agree = msg.createReply(ACLMessage::Performative::AGREE);
+            agree.setSender(AgentIdentifier{my_name_});
+            this_agent->transport().send(dest, agree);
+        }
+
         ACLMessage response = handleRequest(msg);
+
         // S'assurer que la réponse est bien adressée à l'expéditeur
         if (response.getReceivers().empty()) {
             response.addReceiver(msg.getSender());
@@ -251,19 +261,31 @@ public:
             response.setConversationId(msg.getConversationId());
         }
 
-        const std::string& dest = response.getReceivers()[0].name;
-        acl_send(dest, response);
+        this_agent->transport().send(dest, response);
     }
 
     bool done() override { return false; }
 
-    // ── Callback à surcharger ───────────────────────────────────────────────
+    // ── Callbacks à surcharger ──────────────────────────────────────────────
 
     /**
-     * Traite la requête et retourne la réponse.
+     * Appelé avant handleRequest().
      *
-     * Par défaut retourne INFORM vide. Surcharger pour implémenter la logique
-     * métier. Retourner REFUSE ou FAILURE si nécessaire.
+     * Retourner true pour envoyer AGREE immédiatement (traitement long) :
+     * l'initiateur sera notifié que la requête est acceptée et attend INFORM.
+     * Retourner false (défaut) pour répondre directement sans AGREE.
+     *
+     * Exemple :
+     *   bool prepareAgree(const ACLMessage&) override { return true; }
+     */
+    virtual bool prepareAgree(const ACLMessage& /*req*/) { return false; }
+
+    /**
+     * Traite la requête et retourne la réponse finale.
+     *
+     * Retourner INFORM (succès), REFUSE (refus immédiat) ou FAILURE (échec
+     * après AGREE). Si prepareAgree() retourne true, ce callback peut bloquer
+     * le temps du traitement — c'est attendu et conforme FIPA.
      *
      * Exemple :
      *   ACLMessage handleRequest(const ACLMessage& req) override {

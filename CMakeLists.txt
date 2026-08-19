@@ -16,6 +16,12 @@ endif()
 
 include(GNUInstallDirs)
 
+# Les binaires installes dans dist/bin/ doivent trouver dist/lib/libgagent.so
+# sans que l'utilisateur ait a positionner LD_LIBRARY_PATH.
+set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 option(BUILD_TESTS    "Build test suite"             ON)
 option(BUILD_EXAMPLES "Build examples"               ON)
 option(BUILD_PLATFORM "Build platform daemon"        ON)

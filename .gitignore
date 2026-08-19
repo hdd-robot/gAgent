@@ -95,5 +95,9 @@ conan.lock
 openai_key.txt
 
 # Libraries (already committed)
-!src_agent/libgagentlib.so*.pyc
+!src_agent/libgagentlib.so
+
+# dist/ est distribue tel quel (binaires pre-compiles) : la lib doit etre suivie
+!dist/lib/*.so
+!dist/lib/*.so.**.pyc
 __pycache__/
